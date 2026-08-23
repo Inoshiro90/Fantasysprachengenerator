@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasysprachen-Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+
+<body>
+  <nav class="guide-nav">
+    <div class="container">
+      <div class="guide-nav-brand">
+        <div class="guide-nav-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="transparent"
+            stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-languages-icon lucide-languages">
+            <path d="m5 8 6 6" />
+            <path d="m4 14 6-6 2-3" />
+            <path d="M2 5h12" />
+            <path d="M7 2h1" />
+            <path d="m22 22-5-10-5 10" />
+            <path d="M14 18h6" />
+          </svg>
+        </div>
+        Fantasysprachen-Generator
+      </div>
+
+      <div class="guide-nav-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Theme wechseln">
+          <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <line x1="12" y1="2" x2="12" y2="6" />
+            <line x1="12" y1="18" x2="12" y2="22" />
+            <line x1="4.22" y1="4.22" x2="7.05" y2="7.05" />
+            <line x1="16.95" y1="16.95" x2="19.78" y2="19.78" />
+            <line x1="2" y1="12" x2="6" y2="12" />
+            <line x1="18" y1="12" x2="22" y2="12" />
+            <line x1="4.22" y1="19.78" x2="7.05" y2="16.95" />
+            <line x1="16.95" y1="7.05" x2="19.78" y2="4.22" />
+          </svg>
+
+          <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <header class="app-header">
+      <div class="titel-block">
+        <h1>Fantasysprachen-Generator</h1>
+        <p>
+          Verwandle deutschen Text über eine reale Zwischensprache in eine
+          Fantasysprache.
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <div class="text-cards">
+        <section class="card">
+          <h2>Eingabe (Deutsch)</h2>
+          <textarea id="eingabe-text" class="form-input" placeholder="Gib hier deinen deutschen Text ein …"></textarea>
+        </section>
+
+        <section class="card">
+          <h2>Übersetzung (unverändert)</h2>
+          <textarea id="zwischenergebnis-text" class="form-input"
+            placeholder="Die reine Übersetzung (und ggf. Umschrift) erscheint hier …" readonly></textarea>
+        </section>
+
+        <section class="card">
+          <h2>Ausgabe (Fantasysprache)</h2>
+          <textarea id="ausgabe-text" class="form-input" placeholder="Das Ergebnis erscheint hier …"
+            readonly></textarea>
+          <div id="ausgabe-diff" class="diff-ansicht form-input" hidden aria-hidden="true"></div>
+          <label class="form-check">
+            <input type="checkbox" id="diff-anzeigen-toggle" />
+            <span class="form-check-label">Profil-Änderungen farbig hervorheben</span>
+          </label>
+          <ul class="diff-legende" id="diff-legende" hidden>
+            <li><span class="diff-swatch diff-hinzugefuegt"></span> Buchstabe(n) hinzugefügt</li>
+            <li><span class="diff-swatch diff-geaendert"></span> Buchstabe(n) geändert (Länge gleich)</li>
+            <li><span class="diff-swatch diff-entfernt"></span> Buchstabe(n) entfernt</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="steuerzeile">
+        <div class="feld-gruppe">
+          <label class="form-label" for="profil-auswahl">Sprachprofil</label>
+          <select id="profil-auswahl" class="form-input" aria-describedby="zielsprache-info">
+            <option>Lade Profile …</option>
+          </select>
+          <span id="zielsprache-info"></span>
+        </div>
+
+        <button id="generieren-button" class="btn btn-blue" type="button">Generieren</button>
+      </div>
+
+      <section class="card editor-card">
+        <div class="editor-kopf">
+          <h2>Profil bearbeiten: <span id="editor-profil-name"></span></h2>
+          <div class="editor-kopf-aktionen">
+            <span id="editor-override-badge" class="badge badge-blue" hidden>Angepasst</span>
+            <button id="editor-zuruecksetzen-button" class="btn btn-ghost btn-sm" type="button" hidden>
+              Auf Standard zurücksetzen
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-abschnitt">
+          <label class="form-label" for="editor-sprache-select">Reale Zwischensprache</label>
+          <select id="editor-sprache-select" class="form-input"></select>
+          <p id="editor-schrift-hinweis" class="form-hint"></p>
+
+          <label class="form-check">
+            <input type="checkbox" id="editor-sprache-custom-toggle" />
+            <span class="form-check-label">Eigenen Sprachcode eingeben (nicht in der Liste?)</span>
+          </label>
+
+          <div id="editor-sprache-custom-felder" class="editor-custom-felder" hidden>
+            <div class="feld-gruppe">
+              <label class="form-label" for="editor-sprache-custom-code">MyMemory-Sprachcode</label>
+              <input id="editor-sprache-custom-code" class="form-input" type="text" maxlength="7"
+                placeholder="z. B. fo-FO" />
+            </div>
+            <div class="feld-gruppe">
+              <label class="form-label" for="editor-sprache-custom-name">Anzeigename</label>
+              <input id="editor-sprache-custom-name" class="form-input" type="text" placeholder="z. B. Finnisch" />
+            </div>
+            <label class="form-check">
+              <input type="checkbox" id="editor-sprache-custom-romanisierung" />
+              <span class="form-check-label">Nicht-lateinische Schrift umschreiben (nur bei griechischem, kyrillischem
+                oder Ge'ez-Alphabet wirksam)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="editor-abschnitt">
+          <div class="editor-abschnitt-kopf">
+            <span class="form-label">Vokalaustausch</span>
+            <button type="button" class="btn btn-ghost btn-sm" id="editor-vokal-hinzufuegen">+ Regel</button>
+          </div>
+          <p class="form-hint">Optional: Position festlegen, an der eine Regel greifen soll (Standard: überall im Wort).
+          </p>
+          <div id="editor-vokal-liste" class="editor-liste"></div>
+        </div>
+
+        <div class="editor-abschnitt">
+          <div class="editor-abschnitt-kopf">
+            <span class="form-label">Konsonantenaustausch</span>
+            <button type="button" class="btn btn-ghost btn-sm" id="editor-konsonant-hinzufuegen">+ Regel</button>
+          </div>
+          <div id="editor-konsonant-liste" class="editor-liste"></div>
+        </div>
+
+        <div class="editor-aktionen">
+          <button id="editor-speichern-button" class="btn btn-blue" type="button">Änderungen speichern</button>
+        </div>
+
+        <div id="editor-status" class="alert" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+      </section>
+
+      <div class="email-panel">
+        <div class="email-panel-kopf">
+          <h2>Übersetzungs-Limit</h2>
+          <span id="limit-badge" class="badge badge-neutral">5.000 Zeichen/Tag (anonym)</span>
+        </div>
+
+        <p class="form-hint">
+          Die Übersetzung läuft über die kostenlose
+          <a href="https://mymemory.translated.net/" target="_blank" rel="noopener">MyMemory-API</a>.
+          Anonym sind 5.000 Zeichen pro Tag möglich (gezählt pro IP-Adresse).
+          Trägst du deine eigene E-Mail-Adresse ein, erhältst du dein persönliches
+          Limit von 50.000 Zeichen/Tag &ndash; ganz ohne Anmeldung. Die Adresse
+          wird ausschließlich lokal in deinem Browser gespeichert und nur an
+          MyMemory übermittelt.
+        </p>
+
+        <div class="email-eingabe-zeile">
+          <div class="feld-gruppe">
+            <label class="form-label" for="email-eingabe">Eigene E-Mail-Adresse (optional)</label>
+            <input id="email-eingabe" class="form-input" type="email" placeholder="name@beispiel.de"
+              autocomplete="email" />
+          </div>
+          <div style="display:flex; gap: var(--space-3);">
+            <button id="email-speichern-button" class="btn btn-blue" type="button">Speichern</button>
+            <button id="email-entfernen-button" class="btn btn-ghost" type="button" hidden>Entfernen</button>
+          </div>
+        </div>
+
+        <p id="email-aktueller-stand" class="form-hint">Ohne E-Mail: 5.000 Zeichen/Tag (pro IP-Adresse gezählt).</p>
+        <div id="email-status" class="alert" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+        <p id="limit-hinweis" class="form-hint"></p>
+      </div>
+
+      <div class="status-block">
+        <div id="status-zeile" class="alert" role="status" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
