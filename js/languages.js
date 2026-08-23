@@ -194,19 +194,6 @@ export function schriftLabel(schrift) {
   return SCHRIFT_LABEL[schrift] || schrift;
 }
 
-/** Anzeigereihenfolge der Qualitätsstufen (für Gruppierung/Sortierung in der UI). */
-export const QUALITAET_REIHENFOLGE = ['gruen', 'gelb', 'rot'];
-
-const QUALITAET_LABEL = {
-  gruen: '🟢 Präzise Umschrift (oder lateinische Schrift, keine nötig)',
-  gelb: '🟡 Brauchbare Umschrift mit Einschränkungen',
-  rot: '🔴 Lückenhafte Umschrift, hoher Textverlust möglich',
-};
-
-export function qualitaetLabel(qualitaet) {
-  return QUALITAET_LABEL[qualitaet] || qualitaet;
-}
-
 export function findeSpracheNachCode(code) {
   return SPRACHEN.find((s) => s.code === code);
 }

@@ -21,8 +21,6 @@ import {
   findeSpracheNachCode,
   schriftLabel,
   romanisierungFuerCode,
-  QUALITAET_REIHENFOLGE,
-  qualitaetLabel,
 } from './languages.js';
 import { problematischeRegelnErmitteln, schluesselParsen, schluesselKodieren, GUELTIGE_POSITIONEN } from './phonemeTransformer.js';
 
@@ -73,23 +71,15 @@ function spracheSelectBefuellen() {
   const select = el('editor-sprache-select');
   select.innerHTML = '';
 
-  const gruppenNachQualitaet = { gruen: [], gelb: [], rot: [] };
-  for (const sprache of SPRACHEN) {
-    (gruppenNachQualitaet[sprache.qualitaet] ??= []).push(sprache);
-  }
+  const sprachen = [...SPRACHEN].sort((a, b) =>
+    a.name.localeCompare(b.name, 'de')
+  );
 
-  for (const qualitaet of QUALITAET_REIHENFOLGE) {
-    const sprachen = gruppenNachQualitaet[qualitaet];
-    if (!sprachen || sprachen.length === 0) continue;
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = qualitaetLabel(qualitaet);
-    for (const sprache of [...sprachen].sort((a, b) => a.name.localeCompare(b.name, 'de'))) {
-      const option = document.createElement('option');
-      option.value = sprache.code;
-      option.textContent = sprache.name;
-      optgroup.appendChild(option);
-    }
-    select.appendChild(optgroup);
+  for (const sprache of sprachen) {
+    const option = document.createElement('option');
+    option.value = sprache.code;
+    option.textContent = sprache.name;
+    select.appendChild(option);
   }
 }
 
@@ -172,7 +162,6 @@ function schriftHinweisAktualisieren() {
     hinweis.textContent = '';
     return;
   }
-  hinweis.textContent = `${schriftLabel(sprache.schrift)} — ${qualitaetLabel(sprache.qualitaet)}`;
 
   const KLASSE_NACH_QUALITAET = {
     gruen: 'form-hint-erfolg',

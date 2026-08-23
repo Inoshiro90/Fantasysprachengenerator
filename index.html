@@ -108,26 +108,6 @@
         <button id="generieren-button" class="btn btn-blue" type="button">Generieren</button>
       </div>
 
-      <section class="card">
-        <h2>Profile importieren &amp; exportieren</h2>
-        <p class="form-hint">
-          Exportiert alle aktuell wirksamen Profile (inkl. eigener Änderungen und
-          hinzugefügter Profile) als JSON-Datei. Beim Import werden Profile mit
-          bekannter id als Änderung am jeweiligen Basisprofil übernommen, alle
-          anderen als neue Profile hinzugefügt. Fehlerhafte Einträge werden
-          einzeln übersprungen und gemeldet - der Rest der Datei bleibt nutzbar.
-        </p>
-        <div class="import-export-aktionen">
-          <button id="profile-export-button" class="btn btn-secondary" type="button">Profile exportieren</button>
-          <button id="profile-import-button" class="btn btn-secondary" type="button">Profile importieren …</button>
-          <input id="profile-import-datei" type="file" accept="application/json,.json" hidden />
-        </div>
-        <div id="import-export-status" class="alert" hidden>
-          <span class="alert-icon" aria-hidden="true"></span>
-          <div class="alert-content"></div>
-        </div>
-      </section>
-
       <section class="card editor-card">
         <div class="editor-kopf">
           <h2>Profil bearbeiten: <span id="editor-profil-name"></span></h2>
@@ -188,6 +168,7 @@
           <div id="editor-konsonant-liste" class="editor-liste"></div>
         </div>
 
+        <hr style="border: var(--border-whisper); margin-top: var(--space-2);margin-bottom: var(--space-2)">
         <div class="editor-aktionen">
           <button id="editor-speichern-button" class="btn btn-blue" type="button">Änderungen speichern</button>
         </div>
@@ -197,7 +178,39 @@
           <div class="alert-content"></div>
         </div>
       </section>
-
+      <section class="card">
+        <h2>Profile importieren &amp; exportieren</h2>
+        <p class="form-hint">
+          Exportiert alle aktuell wirksamen Profile (inkl. eigener Änderungen und
+          hinzugefügter Profile) als JSON-Datei. Beim Import werden Profile mit
+          bekannter id als Änderung am jeweiligen Basisprofil übernommen, alle
+          anderen als neue Profile hinzugefügt. Fehlerhafte Einträge werden
+          einzeln übersprungen und gemeldet - der Rest der Datei bleibt nutzbar.
+        </p>
+        <div class="import-export-aktionen">
+          <button id="profile-export-button" class="btn btn-secondary" type="button"> <svg
+              xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-download-icon lucide-download">
+              <path d="M12 15V3" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <path d="m7 10 5 5 5-5" />
+            </svg>Profile exportieren</button>
+          <button id="profile-import-button" class="btn btn-secondary" type="button"> <svg
+              xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-upload-icon lucide-upload">
+              <path d="M12 3v12" />
+              <path d="m17 8-5-5-5 5" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            </svg>Profile importieren</button>
+          <input id="profile-import-datei" type="file" accept="application/json,.json" hidden />
+        </div>
+        <div id="import-export-status" class="alert" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+      </section>
       <div class="email-panel">
         <div class="email-panel-kopf">
           <h2>Übersetzungs-Limit</h2>
