@@ -108,6 +108,26 @@
         <button id="generieren-button" class="btn btn-blue" type="button">Generieren</button>
       </div>
 
+      <section class="card">
+        <h2>Profile importieren &amp; exportieren</h2>
+        <p class="form-hint">
+          Exportiert alle aktuell wirksamen Profile (inkl. eigener Änderungen und
+          hinzugefügter Profile) als JSON-Datei. Beim Import werden Profile mit
+          bekannter id als Änderung am jeweiligen Basisprofil übernommen, alle
+          anderen als neue Profile hinzugefügt. Fehlerhafte Einträge werden
+          einzeln übersprungen und gemeldet - der Rest der Datei bleibt nutzbar.
+        </p>
+        <div class="import-export-aktionen">
+          <button id="profile-export-button" class="btn btn-secondary" type="button">Profile exportieren</button>
+          <button id="profile-import-button" class="btn btn-secondary" type="button">Profile importieren …</button>
+          <input id="profile-import-datei" type="file" accept="application/json,.json" hidden />
+        </div>
+        <div id="import-export-status" class="alert" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+      </section>
+
       <section class="card editor-card">
         <div class="editor-kopf">
           <h2>Profil bearbeiten: <span id="editor-profil-name"></span></h2>
@@ -115,6 +135,9 @@
             <span id="editor-override-badge" class="badge badge-blue" hidden>Angepasst</span>
             <button id="editor-zuruecksetzen-button" class="btn btn-ghost btn-sm" type="button" hidden>
               Auf Standard zurücksetzen
+            </button>
+            <button id="editor-loeschen-button" class="btn btn-ghost btn-sm" type="button" hidden>
+              Profil löschen
             </button>
           </div>
         </div>

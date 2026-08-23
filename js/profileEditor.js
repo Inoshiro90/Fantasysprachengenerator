@@ -10,9 +10,11 @@
 
 import {
   findeProfilNachId,
-  setzeUeberschreibung,
   entferneUeberschreibung,
   hatUeberschreibung,
+  istBenutzerdefiniertesProfil,
+  entferneBenutzerdefiniertesProfil,
+  speichereProfil,
 } from './profileRepository.js';
 import {
   SPRACHEN,
@@ -99,9 +101,15 @@ export async function zeigeProfilImEditor(profilId) {
 
   el('editor-profil-name').textContent = profil.name;
 
+  const benutzerdefiniert = istBenutzerdefiniertesProfil(profilId);
   const ueberschrieben = hatUeberschreibung(profilId);
-  el('editor-override-badge').hidden = !ueberschrieben;
-  el('editor-zuruecksetzen-button').hidden = !ueberschrieben;
+  const badge = el('editor-override-badge');
+  badge.hidden = !(benutzerdefiniert || ueberschrieben);
+  badge.textContent = benutzerdefiniert ? 'Importiert' : 'Angepasst';
+  // "Zurücksetzen" ergibt bei einem importierten Profil keinen Sinn (es
+  // gibt keinen Auslieferungszustand dafür) - dort stattdessen "Löschen".
+  el('editor-zuruecksetzen-button').hidden = !ueberschrieben || benutzerdefiniert;
+  el('editor-loeschen-button').hidden = !benutzerdefiniert;
 
   spracheImEditorAnzeigen(profil);
 
@@ -295,7 +303,7 @@ async function speichern() {
   const konsonant_austausch = sammleAustauschTabelle('editor-konsonant-liste');
 
   try {
-    setzeUeberschreibung(aktuelleProfilId, {
+    speichereProfil(aktuelleProfilId, {
       zielsprache,
       zielsprache_name,
       romanisierung_noetig,
@@ -353,6 +361,22 @@ async function zuruecksetzen() {
   if (onGespeichertCallback) onGespeichertCallback(aktuelleProfilId);
 }
 
+/**
+ * Löscht ein per Import hinzugefügtes benutzerdefiniertes Profil
+ * vollständig (nicht verfügbar für Basisprofile - dafür gibt es
+ * stattdessen "Auf Standard zurücksetzen").
+ */
+async function loeschen() {
+  if (!aktuelleProfilId || !istBenutzerdefiniertesProfil(aktuelleProfilId)) return;
+  const name = el('editor-profil-name').textContent;
+  const bestaetigt = window.confirm(`"${name}" wirklich endgültig löschen?`);
+  if (!bestaetigt) return;
+
+  entferneBenutzerdefiniertesProfil(aktuelleProfilId);
+  aktuelleProfilId = null;
+  if (onGespeichertCallback) onGespeichertCallback(null);
+}
+
 function bindEvents() {
   el('editor-vokal-hinzufuegen').addEventListener('click', () => {
     austauschZeileErzeugen(el('editor-vokal-liste'));
@@ -371,4 +395,5 @@ function bindEvents() {
 
   el('editor-speichern-button').addEventListener('click', speichern);
   el('editor-zuruecksetzen-button').addEventListener('click', zuruecksetzen);
+  el('editor-loeschen-button').addEventListener('click', loeschen);
 }

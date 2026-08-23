@@ -1,315 +1,328 @@
 [
-  {
-    "id": "zwergisch",
-    "name": "Zwergisch",
-    "zielsprache": "cy-GB",
-    "zielsprache_name": "Walisisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "ae": "au",
-      "ai": "au",
-      "ei": "au",
-      "oe": "au",
-      "eu": "au",
-      "wy": "au",
-      "y": "u",
-      "w": "u"
-    },
-    "konsonant_austausch": {
-      "dd": "th",
-      "ll": "thl",
-      "ch": "gh",
-      "rh": "rr",
-      "ff": "f",
-      "c": "k",
-      "f": "v"
-    }
-  },
-  {
-    "id": "elfisch",
-    "name": "Elfisch",
-    "zielsprache": "ga-IE",
-    "zielsprache_name": "Irisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "ea": "ae",
-      "ai": "ae",
-      "ei": "ie",
-      "ui": "ii",
-      "ao": "aa"
-    },
-    "konsonant_austausch": {
-      "bh": "v",
-      "mh": "w",
-      "dh": "gh",
-      "gh": "g",
-      "fh": "",
-      "ph": "f",
-      "sh": "h",
-      "th": "h",
-      "ch": "th"
-    }
-  },
-  {
-    "id": "riesisch",
-    "name": "Riesisch",
-    "zielsprache": "no-NO",
-    "zielsprache_name": "Norwegisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "ae": "au"
-    },
-    "konsonant_austausch": {
-      "skj": "sk",
-      "sj": "sk",
-      "kj": "k",
-      "gj": "g",
-      "hj": "j"
-    }
-  },
-  {
-    "id": "gnomisch",
-    "name": "Gnomisch",
-    "zielsprache": "fi-FI",
-    "zielsprache_name": "Finnisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "ia": "ae",
-      "ai": "aj",
-      "ei": "ej",
-      "oi": "oj",
-      "ui": "uj"
-    },
-    "konsonant_austausch": {
-      "k": "kk",
-      "t": "tt",
-      "s": "ss"
-    }
-  },
-  {
-    "id": "goblinisch",
-    "name": "Goblinisch",
-    "zielsprache": "mn-MN",
-    "zielsprache_name": "Mongolisch",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "ch": "ch",
-      "sh": "sh",
-      "zh": "zh",
-      "h": "kh",
-      "g": "gg"
-    }
-  },
-  {
-    "id": "halblingisch",
-    "name": "Halblingisch",
-    "zielsprache": "af-ZA",
-    "zielsprache_name": "Afrikaans",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "d": "dd",
-      "g": "ch"
-    }
-  },
-  {
-    "id": "orkisch",
-    "name": "Orkisch",
-    "zielsprache": "ar-SA",
-    "zielsprache_name": "Arabisch",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "kh": "kh",
-      "gh": "gh",
-      "sh": "sh",
-      "th": "th",
-      "dh": "dh",
-      "s": "sz",
-      "r": "rz",
-      "t": "cz"
-    }
-  },
-  {
-    "id": "tiefensprache",
-    "name": "Tiefensprache",
-    "zielsprache": "hi-IN",
-    "zielsprache_name": "Hindi",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "l": "ll",
-      "r": "rr"
-    }
-  },
-  {
-    "id": "celestisch",
-    "name": "Celestisch",
-    "zielsprache": "am-ET",
-    "zielsprache_name": "Amharisch",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {
-      "a": "aa",
-      "e": "ee",
-      "i": "ii",
-      "o": "oo"
-    },
-    "konsonant_austausch": {
-      "l": "ll",
-      "n": "nn"
-    }
-  },
-  {
-    "id": "drakonisch",
-    "name": "Drakonisch",
-    "zielsprache": "sv-SE",
-    "zielsprache_name": "Schwedisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "ia": "ae",
-      "io": "au"
-    },
-    "konsonant_austausch": {
-      "sk": "sj",
-      "et": "um",
-      "en": "us",
-      "t": "th",
-      "k": "ch"
-    }
-  },
-  {
-    "id": "infernal",
-    "name": "Infernal",
-    "zielsprache": "el-GR",
-    "zielsprache_name": "Griechisch",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {
-      "ai": "a'a",
-      "oy": "yo",
-      "ei": "ie"
-    },
-    "konsonant_austausch": {
-      "f": "ph",
-      "os": "on"
-    }
-  },
-  {
-    "id": "urtuemlich_aquaan",
-    "name": "Urtuemlich - Aquaan",
-    "zielsprache": "uz-UZ",
-    "zielsprache_name": "Usbekisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "a": "aa",
-      "o": "oo"
-    },
-    "konsonant_austausch": {
-      "s": "sh",
-      "l": "ll"
-    }
-  },
-  {
-    "id": "urtuemlich_auran",
-    "name": "Urtuemlich - Auran",
-    "zielsprache": "zu-ZA",
-    "zielsprache_name": "Zulu",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "i": "ii",
-      "e": "ee"
-    },
-    "konsonant_austausch": {
-      "k": "h",
-      "h": "hh"
-    }
-  },
-  {
-    "id": "urtuemlich_ignan",
-    "name": "Urtuemlich - Ignan",
-    "zielsprache": "bs-BA",
-    "zielsprache_name": "Bosnisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "k": "kk",
-      "t": "tt",
-      "s": "ts"
-    }
-  },
-  {
-    "id": "urtuemlich_terran",
-    "name": "Urtuemlich - Terran",
-    "zielsprache": "sr-RS",
-    "zielsprache_name": "Serbisch",
-    "romanisierung_noetig": true,
-    "vokal_austausch": {
-      "o": "oo",
-      "u": "uu"
-    },
-    "konsonant_austausch": {
-      "g": "gg",
-      "d": "dd",
-      "k": "kk"
-    }
-  },
-  {
-    "id": "sylvanisch",
-    "name": "Sylvanisch",
-    "zielsprache": "ga-IE",
-    "zielsprache_name": "Irisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "o": "oi",
-      "a": "ae"
-    },
-    "konsonant_austausch": {
-      "s": "sh",
-      "t": "th"
-    }
-  },
-  {
-    "id": "unterreich_gemeinsprache",
-    "name": "Gemeinsprache des Unterreichs",
-    "zielsprache": "sw-SZ",
-    "zielsprache_name": "Swahili",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "th": "th",
-      "t": "th",
-      "l": "ll"
-    }
-  },
-  {
-    "id": "druidisch",
-    "name": "Druidisch",
-    "zielsprache": "fo-FO",
-    "zielsprache_name": "Faeroeisch",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {
-      "a": "ah",
-      "o": "oh"
-    },
-    "konsonant_austausch": {
-      "t": "th",
-      "d": "dh"
-    }
-  },
-  {
-    "id": "gith",
-    "name": "Gith",
-    "zielsprache": "xh-ZA",
-    "zielsprache_name": "Xhosa",
-    "romanisierung_noetig": false,
-    "vokal_austausch": {},
-    "konsonant_austausch": {
-      "ch": "ch",
-      "qh": "qh",
-      "xh": "xh",
-      "c": "c'",
-      "q": "q'",
-      "x": "x'"
-    }
-  }
+	{
+		"id": "zwergisch",
+		"name": "Zwergisch",
+		"zielsprache": "cy-GB",
+		"zielsprache_name": "Walisisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ae": "au",
+			"ai": "au",
+			"ei": "au",
+			"oe": "au",
+			"eu": "au",
+			"wy": "au",
+			"y": "u",
+			"w": "u"
+		},
+		"konsonant_austausch": {
+			"dd": "th",
+			"ll": "thl",
+			"ch": "gh",
+			"rh": "rr",
+			"ff": "f",
+			"c": "k",
+			"f": "v"
+		}
+	},
+	{
+		"id": "elfisch",
+		"name": "Elfisch",
+		"zielsprache": "ga-IE",
+		"zielsprache_name": "Irisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ea": "ae",
+			"ai": "ae",
+			"ei": "ie",
+			"ui": "ii",
+			"ao": "aa"
+		},
+		"konsonant_austausch": {
+			"bh": "v",
+			"mh": "w",
+			"dh": "gh",
+			"gh": "g",
+			"fh": "",
+			"ph": "f",
+			"sh": "h",
+			"th": "h",
+			"ch": "th"
+		}
+	},
+	{
+		"id": "riesisch",
+		"name": "Riesisch",
+		"zielsprache": "no-NO",
+		"zielsprache_name": "Norwegisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ae": "au"
+		},
+		"konsonant_austausch": {
+			"skj": "sk",
+			"sj": "sk",
+			"gj": "g",
+			"hj:anfang": "j",
+			"kj:anfang": "k"
+		}
+	},
+	{
+		"id": "gnomisch",
+		"name": "Gnomisch",
+		"zielsprache": "fi-FI",
+		"zielsprache_name": "Finnisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ia": "ae",
+			"ai": "aj",
+			"ei": "ej",
+			"oi": "oj",
+			"ui": "uj"
+		},
+		"konsonant_austausch": {
+			"k": "kk",
+			"t": "tt",
+			"s": "ss"
+		}
+	},
+	{
+		"id": "goblinisch",
+		"name": "Goblinisch",
+		"zielsprache": "mn-MN",
+		"zielsprache_name": "Mongolisch",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"ch": "ch",
+			"sh": "sh",
+			"zh": "zh",
+			"h": "kh",
+			"g": "gg"
+		}
+	},
+	{
+		"id": "halblingisch",
+		"name": "Halblingisch",
+		"zielsprache": "af-ZA",
+		"zielsprache_name": "Afrikaans",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"d": "dd",
+			"g": "ch"
+		}
+	},
+	{
+		"id": "orkisch",
+		"name": "Orkisch",
+		"zielsprache": "ar-SA",
+		"zielsprache_name": "Arabisch",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"kh": "kh",
+			"gh": "gh",
+			"sh": "sh",
+			"th": "th",
+			"dh": "dh",
+			"s": "sz",
+			"r": "rz",
+			"t": "cz"
+		}
+	},
+	{
+		"id": "tiefensprache",
+		"name": "Tiefensprache",
+		"zielsprache": "hi-IN",
+		"zielsprache_name": "Hindi",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"l": "ll",
+			"r": "rr"
+		}
+	},
+	{
+		"id": "celestisch",
+		"name": "Celestisch",
+		"zielsprache": "he-IL",
+		"zielsprache_name": "Hebraeisch",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {
+			"au": "ie"
+		},
+		"konsonant_austausch": {
+			"um:ende": "al",
+			"ym:ende": "el"
+		}
+	},
+	{
+		"id": "drakonisch",
+		"name": "Drakonisch",
+		"zielsprache": "sv-SE",
+		"zielsprache_name": "Schwedisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ia": "ae",
+			"io": "au"
+		},
+		"konsonant_austausch": {
+			"sk": "sj",
+			"t": "th",
+			"k": "ch",
+			"et:ende": "um",
+			"en:ende": "us"
+		}
+	},
+	{
+		"id": "abyssisch",
+		"name": "Abyssisch",
+		"zielsprache": "sq-AL",
+		"zielsprache_name": "Albanisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ia": "ae",
+			"ua": "ou"
+		},
+		"konsonant_austausch": {
+			"th": "th",
+			"t": "th",
+			"c": "ch",
+			"en:ende": "on"
+		}
+	},
+	{
+		"id": "infernal",
+		"name": "Infernal",
+		"zielsprache": "el-GR",
+		"zielsprache_name": "Griechisch",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {
+			"ai": "a'a",
+			"oy": "yo",
+			"ei": "ie"
+		},
+		"konsonant_austausch": {
+			"f": "ph",
+			"os:ende": "on"
+		}
+	},
+	{
+		"id": "urtuemlich_aquaan",
+		"name": "Urtuemlich - Aquaan",
+		"zielsprache": "uz-UZ",
+		"zielsprache_name": "Usbekisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"a": "aa",
+			"o": "oo"
+		},
+		"konsonant_austausch": {
+			"s": "sh",
+			"l": "ll"
+		}
+	},
+	{
+		"id": "urtuemlich_auran",
+		"name": "Urtuemlich - Auran",
+		"zielsprache": "zu-ZA",
+		"zielsprache_name": "Zulu",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"i": "ii",
+			"e": "ee"
+		},
+		"konsonant_austausch": {
+			"k": "h",
+			"h": "hh"
+		}
+	},
+	{
+		"id": "urtuemlich_ignan",
+		"name": "Urtuemlich - Ignan",
+		"zielsprache": "bs-BA",
+		"zielsprache_name": "Bosnisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"k": "kk",
+			"t": "tt",
+			"s": "ts"
+		}
+	},
+	{
+		"id": "urtuemlich_terran",
+		"name": "Urtuemlich - Terran",
+		"zielsprache": "sr-RS",
+		"zielsprache_name": "Serbisch",
+		"romanisierung_noetig": true,
+		"vokal_austausch": {
+			"o": "oo",
+			"u": "uu"
+		},
+		"konsonant_austausch": {
+			"g": "gg",
+			"d": "dd",
+			"k": "kk"
+		}
+	},
+	{
+		"id": "sylvanisch",
+		"name": "Sylvanisch",
+		"zielsprache": "gd-GB",
+		"zielsprache_name": "Gaelisch (Schottisch)",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"ai": "ie"
+		},
+		"konsonant_austausch": {
+			"s": "sh",
+			"n": "ng"
+		}
+	},
+	{
+		"id": "unterreich_gemeinsprache",
+		"name": "Gemeinsprache des Unterreichs",
+		"zielsprache": "sw-SZ",
+		"zielsprache_name": "Swahili",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"th": "th",
+			"t": "th",
+			"l": "ll"
+		}
+	},
+	{
+		"id": "druidisch",
+		"name": "Druidisch",
+		"zielsprache": "fo-FO",
+		"zielsprache_name": "Faeroeisch",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {
+			"a": "ah",
+			"o": "oh"
+		},
+		"konsonant_austausch": {
+			"t": "th",
+			"d": "dh"
+		}
+	},
+	{
+		"id": "gith",
+		"name": "Gith",
+		"zielsprache": "xh-ZA",
+		"zielsprache_name": "Xhosa",
+		"romanisierung_noetig": false,
+		"vokal_austausch": {},
+		"konsonant_austausch": {
+			"ch": "ch",
+			"qh": "qh",
+			"xh": "xh",
+			"c": "c'",
+			"q": "q'",
+			"x": "x'"
+		}
+	}
 ]

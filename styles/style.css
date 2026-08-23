@@ -890,6 +890,11 @@ footer.app-footer p {
 	gap: var(--space-3);
 }
 
+#editor-loeschen-button:hover:not(:disabled) {
+	background: rgba(231,76,60,0.1);
+	color: var(--color-error);
+}
+
 .editor-abschnitt {
 	padding-top: var(--space-4);
 	border-top: var(--border-whisper);
@@ -977,4 +982,10 @@ footer.app-footer p {
 .editor-aktionen {
 	display: flex;
 	justify-content: flex-end;
+}
+
+.import-export-aktionen {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
 }

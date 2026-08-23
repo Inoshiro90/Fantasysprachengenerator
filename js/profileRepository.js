@@ -11,6 +11,7 @@
 
 const PROFILES_URL = new URL('../data/profiles.json', import.meta.url).href;
 const OVERRIDES_KEY = 'fantasysprachen_profil_overrides_v1';
+const CUSTOM_KEY = 'fantasysprachen_profil_custom_v1';
 
 let cachedBasisProfile = null;
 
@@ -132,6 +133,73 @@ export function entferneUeberschreibung(id) {
   overridesSchreiben(alle);
 }
 
+// --- Benutzerdefinierte Profile (per Import hinzugefügt, existieren NICHT
+// in data/profiles.json), gespeichert in localStorage ---
+
+function benutzerdefinierteProfileLesen() {
+  try {
+    const roh = localStorage.getItem(CUSTOM_KEY);
+    return roh ? JSON.parse(roh) : {};
+  } catch {
+    return {};
+  }
+}
+
+function benutzerdefinierteProfileSchreiben(map) {
+  try {
+    localStorage.setItem(CUSTOM_KEY, JSON.stringify(map));
+  } catch {
+    throw new Error('Benutzerdefinierte Profile konnten nicht gespeichert werden (localStorage nicht verfügbar).');
+  }
+}
+
+/** Liefert alle benutzerdefinierten (importierten) Profile als Array, id-sortiert. */
+export function holeBenutzerdefinierteProfile() {
+  return Object.values(benutzerdefinierteProfileLesen()).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Fügt ein oder mehrere vollständige, bereits validierte Profilobjekte als
+ * benutzerdefinierte Profile hinzu bzw. überschreibt bestehende gleichen
+ * Namens (per id). Wird vom Import (profileImportExport.js) sowie beim
+ * Bearbeiten eines bereits importierten Profils im Editor verwendet.
+ */
+export function setzeBenutzerdefinierteProfile(profile) {
+  const alle = benutzerdefinierteProfileLesen();
+  for (const profil of profile) {
+    alle[profil.id] = profil;
+  }
+  benutzerdefinierteProfileSchreiben(alle);
+}
+
+/** Entfernt ein benutzerdefiniertes (importiertes) Profil vollständig. */
+export function entferneBenutzerdefiniertesProfil(id) {
+  const alle = benutzerdefinierteProfileLesen();
+  delete alle[id];
+  benutzerdefinierteProfileSchreiben(alle);
+}
+
+/** Ob es sich um ein per Import hinzugefügtes Profil handelt (nicht in profiles.json enthalten). */
+export function istBenutzerdefiniertesProfil(id) {
+  return Object.prototype.hasOwnProperty.call(benutzerdefinierteProfileLesen(), id);
+}
+
+/**
+ * Einheitliche Speicherfunktion für den Profil-Editor: aktualisiert je
+ * nach Herkunft entweder die Überschreibung eines Basisprofils oder direkt
+ * ein benutzerdefiniertes (importiertes) Profil - der Editor muss den
+ * Unterschied nicht selbst kennen.
+ */
+export function speichereProfil(id, patch) {
+  if (istBenutzerdefiniertesProfil(id)) {
+    const alle = benutzerdefinierteProfileLesen();
+    alle[id] = { ...alle[id], ...patch, id };
+    benutzerdefinierteProfileSchreiben(alle);
+  } else {
+    setzeUeberschreibung(id, patch);
+  }
+}
+
 function mitUeberschreibungZusammenfuehren(basisProfil, override) {
   if (!override) return basisProfil;
   return {
@@ -145,16 +213,18 @@ function mitUeberschreibungZusammenfuehren(basisProfil, override) {
 }
 
 /**
- * Lädt alle Sprachprofile inkl. nutzerseitiger Überschreibungen (effektive
- * Profile, wie sie bei der Generierung tatsächlich verwendet werden).
+ * Lädt alle Sprachprofile inkl. nutzerseitiger Überschreibungen UND per
+ * Import hinzugefügter benutzerdefinierter Profile (effektive Profile, wie
+ * sie bei der Generierung tatsächlich verwendet werden).
  * @returns {Promise<Array<object>>}
  */
 export async function ladeProfile() {
   const basisListe = await ladeBasisProfile();
   const overrides = overridesLesen();
-  return basisListe.map((basis) =>
+  const effektiveBasis = basisListe.map((basis) =>
     mitUeberschreibungZusammenfuehren(basis, overrides[basis.id])
   );
+  return [...effektiveBasis, ...holeBenutzerdefinierteProfile()];
 }
 
 /**

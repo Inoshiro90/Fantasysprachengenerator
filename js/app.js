@@ -7,6 +7,7 @@
  */
 
 import { ladeProfile, findeProfilNachId } from './profileRepository.js';
+import { profileExportieren, profileImportieren } from './profileImportExport.js';
 import {
   translate,
   verbleibendeZeichenHeute,
@@ -39,6 +40,11 @@ const emailSpeichernButton = document.getElementById('email-speichern-button');
 const emailEntfernenButton = document.getElementById('email-entfernen-button');
 const emailAktuellerStand = document.getElementById('email-aktueller-stand');
 const emailStatus = document.getElementById('email-status');
+
+const profileExportButton = document.getElementById('profile-export-button');
+const profileImportButton = document.getElementById('profile-import-button');
+const profileImportDatei = document.getElementById('profile-import-datei');
+const importExportStatus = document.getElementById('import-export-status');
 
 const THEME_KEY = 'ds-warm-theme';
 
@@ -130,6 +136,110 @@ function emailEntfernenKlick() {
   limitAnzeigeAktualisieren();
   alertAusblenden(emailStatus);
   statusSetzen('E-Mail-Adresse entfernt. Tageslimit zurück auf 5.000 Zeichen.', 'info');
+}
+
+/**
+ * Befüllt die #import-export-status Alert-Box mit Icon + strukturiertem
+ * Inhalt (Zusammenfassung + ggf. Fehler-/Warnlisten). Analog zu
+ * statusAnzeigen() in profileEditor.js, hier lokal gehalten, weil die
+ * Import/Export-Logik komplett in app.js verdrahtet ist.
+ */
+function importExportStatusAnzeigen(art, inhaltAufbauen) {
+  importExportStatus.className = `alert ${ALERT_KLASSE[art] || ALERT_KLASSE.info}`;
+  importExportStatus.querySelector('.alert-icon').textContent = ALERT_ICON[art] || ALERT_ICON.info;
+  const content = importExportStatus.querySelector('.alert-content');
+  content.innerHTML = '';
+  inhaltAufbauen(content);
+  importExportStatus.hidden = false;
+}
+
+function meldungslisteAnhaengen(content, titel, meldungen) {
+  const ueberschrift = document.createElement('p');
+  ueberschrift.textContent = titel;
+  content.appendChild(ueberschrift);
+  const liste = document.createElement('ul');
+  liste.className = 'editor-warnliste';
+  for (const meldung of meldungen) {
+    const eintrag = document.createElement('li');
+    eintrag.textContent = meldung;
+    liste.appendChild(eintrag);
+  }
+  content.appendChild(liste);
+}
+
+async function profileExportierenKlick() {
+  try {
+    const anzahl = await profileExportieren();
+    importExportStatusAnzeigen('erfolg', (content) => {
+      content.textContent = `${anzahl} Profile wurden als JSON-Datei exportiert.`;
+    });
+  } catch (fehler) {
+    importExportStatusAnzeigen('fehler', (content) => {
+      content.textContent = `Export fehlgeschlagen: ${fehler.message}`;
+    });
+  }
+}
+
+function profileImportierenKlick() {
+  profileImportDatei.value = '';
+  profileImportDatei.click();
+}
+
+async function profileImportDateiAusgewaehlt() {
+  const datei = profileImportDatei.files[0];
+  if (!datei) return;
+
+  let rohtext;
+  try {
+    rohtext = await datei.text();
+  } catch {
+    importExportStatusAnzeigen('fehler', (content) => {
+      content.textContent = 'Datei konnte nicht gelesen werden.';
+    });
+    return;
+  }
+
+  let ergebnis;
+  try {
+    ergebnis = await profileImportieren(rohtext);
+  } catch (fehler) {
+    // Nur bei komplett unverarbeitbarer Datei (kein JSON / kein Array):
+    // hier gibt es nichts Granulares mehr zu retten.
+    importExportStatusAnzeigen('fehler', (content) => {
+      content.textContent = fehler.message;
+    });
+    return;
+  }
+
+  const { uebernommenGesamt, alsUeberschreibungUebernommen, alsNeuUebernommen, fehler, warnungen } = ergebnis;
+
+  if (uebernommenGesamt === 0) {
+    importExportStatusAnzeigen('fehler', (content) => {
+      meldungslisteAnhaengen(content, 'Import fehlgeschlagen - kein einziges Profil war gültig:', fehler);
+    });
+    return;
+  }
+
+  const art = fehler.length > 0 ? 'warnung' : 'erfolg';
+  importExportStatusAnzeigen(art, (content) => {
+    const teile = [];
+    if (alsUeberschreibungUebernommen > 0) teile.push(`${alsUeberschreibungUebernommen} verändert`);
+    if (alsNeuUebernommen > 0) teile.push(`${alsNeuUebernommen} neu hinzugefügt`);
+    const zusammenfassung = document.createElement('p');
+    zusammenfassung.textContent = `${uebernommenGesamt} Profile übernommen (${teile.join(', ')}).`;
+    content.appendChild(zusammenfassung);
+
+    if (warnungen.length > 0) {
+      meldungslisteAnhaengen(content, `${warnungen.length === 1 ? 'Ein Hinweis' : `${warnungen.length} Hinweise`} zu übernommenen Profilen:`, warnungen);
+    }
+    if (fehler.length > 0) {
+      meldungslisteAnhaengen(content, `${fehler.length === 1 ? 'Ein Eintrag' : `${fehler.length} Einträge`} wurden übersprungen:`, fehler);
+    }
+  });
+
+  await profileInDropdownLaden();
+  zielspracheAnzeigen();
+  zeigeProfilImEditor(profilAuswahl.value);
 }
 
 async function profileInDropdownLaden() {
@@ -350,13 +460,19 @@ function init() {
       emailSpeichernKlick();
     }
   });
+  profileExportButton.addEventListener('click', profileExportierenKlick);
+  profileImportButton.addEventListener('click', profileImportierenKlick);
+  profileImportDatei.addEventListener('change', profileImportDateiAusgewaehlt);
 
   initProfilEditor({
     onGespeichert: async () => {
       // Dropdown-Beschriftung (Profilname + Zielsprache) neu aufbauen, falls
-      // sich die Zwischensprache durch die Bearbeitung geändert hat.
+      // sich die Zwischensprache durch die Bearbeitung geändert hat (oder ein
+      // importiertes Profil gelöscht wurde und die Auswahl neu bestimmt
+      // werden muss).
       await profileInDropdownLaden();
       zielspracheAnzeigen();
+      zeigeProfilImEditor(profilAuswahl.value);
     },
   });
 
