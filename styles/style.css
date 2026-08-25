@@ -18,6 +18,7 @@
 	--color-teal: #2a9d99;
 	--color-green: #1aae39;
 	--color-orange: #dd5b00;
+	--color-red: #dc2626;
 	--color-pink: #ff64c8;
 	--color-purple: #391c57;
 	--color-brown: #523410;
@@ -205,6 +206,21 @@
 	padding: 0;
 }
 
+/*
+ * Robuste globale Regel für das native [hidden]-Attribut: viele
+ * Komponenten-Klassen setzen selbst eine eigene "display"-Eigenschaft
+ * (z. B. .card/.alert/.badge/.btn -> display: flex/inline-flex). Da
+ * Autoren-CSS die UA-Stylesheet-Regel "[hidden] { display: none }"
+ * grundsätzlich schlägt (unabhängig von Spezifität), würde ein Element wie
+ * <div class="card" hidden> trotz hidden-Attribut sichtbar bleiben, sobald
+ * IRGENDEINE seiner Klassen "display" setzt. Diese Regel mit !important
+ * stellt sicher, dass hidden IMMER gewinnt, unabhängig davon, welche
+ * Komponenten-Klasse(n) sonst noch auf dem Element sitzen.
+ */
+[hidden] {
+	display: none !important;
+}
+
 body {
 	margin: 0;
 	min-height: 100vh;
@@ -214,6 +230,7 @@ body {
 	font-size: var(--text-body);
 	font-weight: var(--fw-regular);
 	line-height: var(--lh-body);
+	overflow-wrap: break-word;
 	transition:
 		background-color var(--dur-base) var(--ease),
 		color var(--dur-base) var(--ease);
@@ -608,7 +625,8 @@ select.form-input {
 	line-height: var(--lh-nav);
 	cursor: pointer;
 	text-decoration: none;
-	white-space: nowrap;
+	white-space: normal;
+	text-align: center;
 	transition:
 		background var(--dur-base) var(--ease),
 		color var(--dur-base) var(--ease),
@@ -662,6 +680,20 @@ select.form-input {
 .btn-ghost:hover:not(:disabled) {
 	background: var(--bg-warm);
 	text-decoration: underline;
+}
+
+.btn-danger {
+	background: rgba(231, 76, 60, 0.9);
+	color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+	background: rgb(220, 38, 38);
+}
+
+.alert-aktionen {
+	display: flex;
+	gap: var(--space-2);
+	margin-top: var(--space-2);
 }
 
 .btn-sm {
@@ -832,7 +864,7 @@ select.form-input {
 }
 .alert-error {
 	background: rgba(220, 38, 38, 0.07);
-	border-color: #dc2626;
+	border-color: var(--color-red);
 }
 [data-theme='dark'] .alert-info {
 	background: rgba(77, 157, 224, 0.1);
@@ -891,7 +923,7 @@ footer.app-footer p {
 }
 
 #editor-loeschen-button:hover:not(:disabled) {
-	background: rgba(231,76,60,0.1);
+	background: rgba(231, 76, 60, 0.1);
 	color: var(--color-error);
 }
 
@@ -988,4 +1020,91 @@ footer.app-footer p {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--space-3);
+}
+
+.zwischenergebnis-aktionen {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+}
+
+/* =====================================================
+   DIALOGE (natives <dialog> - Profilauswahl Ex-/Import)
+   ===================================================== */
+
+.ds-dialog {
+	width: min(560px, calc(100vw - 2 * var(--space-5)));
+	max-height: calc(100vh - 2 * var(--space-6));
+	margin: auto;
+	padding: var(--space-5);
+	border: var(--border-whisper);
+	border-radius: var(--radius-md);
+	background: var(--bg-surface);
+	color: var(--text-primary);
+	box-shadow: var(--shadow-deep);
+}
+/* Layout NUR anwenden, wenn der Dialog tatsächlich offen ist: dialog-
+   Elemente sind über die native UA-Regel "dialog:not([open]) { display:
+   none; }" standardmäßig unsichtbar. Ein unbedingtes "display: flex" auf
+   .ds-dialog selbst würde genau wie beim [hidden]-Bug diese Regel
+   überschreiben - der Dialog wäre dann IMMER sichtbar (ganz unten im
+   normalen Dokumentfluss statt modal), und dialog.close() könnte ihn
+   visuell gar nicht mehr verstecken. */
+.ds-dialog[open] {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+.ds-dialog::backdrop {
+	background: var(--bg-overlay);
+}
+.ds-dialog h2 {
+	margin: 0;
+	font-size: var(--text-h4);
+	font-weight: var(--fw-semibold);
+	color: var(--text-primary);
+}
+.ds-dialog .form-hint {
+	margin: 0;
+}
+
+.dialog-mini-aktionen {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.dialog-checkbox-liste {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	max-height: 320px;
+	overflow-y: auto;
+	padding: var(--space-3);
+	border: var(--border-whisper);
+	border-radius: var(--radius-sm);
+	background: var(--bg-page);
+}
+.dialog-checkbox-liste .form-check-label {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.dialog-checkbox-liste .form-check-label small {
+	color: var(--text-muted);
+	font-size: var(--text-badge);
+}
+
+.dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-3);
+	padding-top: var(--space-2);
+	border-top: var(--border-whisper);
+}
+
+#import-einzeln-textarea {
+	min-height: 200px;
+	font-family: var(--font-mono);
+	resize: vertical;
 }

@@ -56,16 +56,6 @@
   </nav>
 
   <div class="container">
-    <header class="app-header">
-      <div class="titel-block">
-        <h1>Fantasysprachen-Generator</h1>
-        <p>
-          Verwandle deutschen Text über eine reale Zwischensprache in eine
-          Fantasysprache.
-        </p>
-      </div>
-    </header>
-
     <main>
       <div class="text-cards">
         <section class="card">
@@ -76,7 +66,24 @@
         <section class="card">
           <h2>Übersetzung (unverändert)</h2>
           <textarea id="zwischenergebnis-text" class="form-input"
-            placeholder="Die reine Übersetzung (und ggf. Umschrift) erscheint hier …" readonly></textarea>
+            placeholder="Die reine Übersetzung (und ggf. Umschrift) erscheint hier … oder füge eigenen Text direkt ein."></textarea>
+          <div class="zwischenergebnis-aktionen">
+            <button id="zwischenergebnis-einfuegen-button" class="btn btn-secondary btn-sm" type="button"><svg
+                xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-clipboard-list-icon lucide-clipboard-list">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <path d="M12 11h4" />
+                <path d="M12 16h4" />
+                <path d="M8 11h.01" />
+                <path d="M8 16h.01" />
+              </svg> Aus Zwischenablage einfügen</button>
+            <label class="form-check">
+              <input type="checkbox" id="zwischenergebnis-manuell-toggle" />
+              <span class="form-check-label">Diesen Text direkt verwenden (MyMemory überspringen)</span>
+            </label>
+          </div>
         </section>
 
         <section class="card">
@@ -105,8 +112,29 @@
           <span id="zielsprache-info"></span>
         </div>
 
+        <button id="profil-neu-button" class="btn btn-secondary" type="button">+ Neues Profil</button>
         <button id="generieren-button" class="btn btn-blue" type="button">Generieren</button>
       </div>
+
+      <section class="card" id="profil-neu-karte" hidden>
+        <h2>Neue Fantasysprache erstellen</h2>
+        <p class="form-hint">
+          Vergib einen Namen für die neue Fantasysprache. Zwischensprache sowie
+          Vokal-/Konsonantenregeln stellst du danach im Profil-Editor darunter ein.
+        </p>
+        <div class="feld-gruppe">
+          <label class="form-label" for="profil-neu-name">Name der Fantasysprache</label>
+          <input id="profil-neu-name" class="form-input" type="text" maxlength="60" placeholder="z. B. Sumpfsprache" />
+        </div>
+        <div id="profil-neu-status" class="alert" hidden>
+          <span class="alert-icon" aria-hidden="true"></span>
+          <div class="alert-content"></div>
+        </div>
+        <div class="editor-aktionen">
+          <button id="profil-neu-abbrechen-button" class="btn btn-ghost" type="button">Abbrechen</button>
+          <button id="profil-neu-erstellen-button" class="btn btn-blue" type="button">Profil erstellen</button>
+        </div>
+      </section>
 
       <section class="card editor-card">
         <div class="editor-kopf">
@@ -206,6 +234,25 @@
             </svg>Profile importieren</button>
           <input id="profile-import-datei" type="file" accept="application/json,.json" hidden />
         </div>
+        <p class="form-hint">Oder einzelne Profile gezielt aus-/einwählen:</p>
+        <div class="import-export-aktionen">
+          <button id="export-einzeln-oeffnen-button" class="btn btn-secondary btn-sm" type="button"> <svg
+              xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-download-icon lucide-download">
+              <path d="M12 15V3" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <path d="m7 10 5 5 5-5" />
+            </svg>Einzelne Profile exportieren</button>
+          <button id="import-einzeln-oeffnen-button" class="btn btn-secondary btn-sm" type="button"> <svg
+              xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-upload-icon lucide-upload">
+              <path d="M12 3v12" />
+              <path d="m17 8-5-5-5 5" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            </svg>Einzelnes Profil importieren</button>
+        </div>
         <div id="import-export-status" class="alert" hidden>
           <span class="alert-icon" aria-hidden="true"></span>
           <div class="alert-content"></div>
@@ -255,6 +302,48 @@
       </div>
     </main>
   </div>
+
+  <dialog id="export-auswahl-dialog" class="ds-dialog">
+    <h2>Profile auswählen</h2>
+    <p class="form-hint">Wähle aus, welche Profile exportiert werden sollen. Bei genau einem ausgewählten Profil wird
+      ein einzelnes Profilobjekt exportiert, bei mehreren ein Array.</p>
+    <div class="dialog-mini-aktionen">
+      <button type="button" id="export-alle-auswaehlen-button" class="btn btn-ghost btn-sm">Alle auswählen</button>
+      <button type="button" id="export-keine-auswaehlen-button" class="btn btn-ghost btn-sm">Keine auswählen</button>
+    </div>
+    <div id="export-profil-liste" class="dialog-checkbox-liste"></div>
+    <div class="dialog-footer">
+      <button type="button" id="export-dialog-abbrechen-button" class="btn btn-ghost">Abbrechen</button>
+      <button type="button" id="export-dialog-bestaetigen-button" class="btn btn-blue">Ausgewählte exportieren</button>
+    </div>
+  </dialog>
+
+  <dialog id="import-einzeln-dialog" class="ds-dialog">
+    <h2>Einzelnes Profil importieren</h2>
+    <p class="form-hint">
+      Füge JSON für ein einzelnes Profil (oder mehrere als Array) direkt ein,
+      oder lade eine .txt-/.json-Datei hoch. Eine bekannte id überschreibt das
+      jeweilige Profil, eine neue id fügt ein neues Profil hinzu.
+    </p>
+    <div class="feld-gruppe">
+      <label class="form-label" for="import-einzeln-textarea">Profil-JSON</label>
+      <textarea id="import-einzeln-textarea" class="form-input" rows="10"
+        placeholder='{ "id": "sumpfsprache", "name": "Sumpfsprache", "zielsprache": "fi-FI", "zielsprache_name": "Finnisch", "romanisierung_noetig": false, "vokal_austausch": {}, "konsonant_austausch": {} }'></textarea>
+    </div>
+    <div class="import-export-aktionen">
+      <button type="button" id="import-einzeln-datei-button" class="btn btn-secondary btn-sm">Datei hochladen
+        (.txt/.json)</button>
+      <input type="file" id="import-einzeln-datei" accept=".txt,.json,text/plain,application/json" hidden />
+    </div>
+    <div id="import-einzeln-status" class="alert" hidden>
+      <span class="alert-icon" aria-hidden="true"></span>
+      <div class="alert-content"></div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" id="import-einzeln-abbrechen-button" class="btn btn-ghost">Abbrechen</button>
+      <button type="button" id="import-einzeln-bestaetigen-button" class="btn btn-blue">Importieren</button>
+    </div>
+  </dialog>
 
   <script type="module" src="js/app.js"></script>
 </body>
