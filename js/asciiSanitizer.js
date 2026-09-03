@@ -28,6 +28,15 @@ const SONDERBUCHSTABEN_MAP = {
   'ŋ': 'ng', 'Ŋ': 'NG',
   'ħ': 'h', 'Ħ': 'H',
   'ŧ': 't', 'Ŧ': 'T',
+  // IPA-Erweiterungsbuchstaben westafrikanischer Sprachen (Akan, Bambara,
+  // Ewe, Fulah, Twi ua.) - eigenstaendige Codepoints ohne Akzent-Anteil,
+  // daher wie oben ohne NFD-Zerlegung zerlegbar. ɔ/ɛ = offenes o/e, ɖ =
+  // retroflexes d, ɗ = implosives d, ɲ = palatales n (span. ñ-Laut).
+  'ɔ': 'o', 'Ɔ': 'O',
+  'ɛ': 'e', 'Ɛ': 'E',
+  'ɖ': 'd', 'Ɖ': 'D',
+  'ɗ': 'd', 'Ɗ': 'D',
+  'ɲ': 'ny', 'Ɲ': 'Ny',
   // Ostasiatische (vollbreite) Satzzeichen: werden auf ihr ASCII-Pendant
   // abgebildet statt ersatzlos entfernt. Ohne diese Abbildung wuerden
   // z. B. bei Chinesisch/Japanisch zwei durch ein Komma getrennte

@@ -27,6 +27,7 @@ import { hatKoptischesSchema, transliteriereKoptisch } from './copticTranslitera
 import { hatLaotischesSchema, transliteriereLaotisch } from './laoTransliteration.js';
 import { hatDhivehiSchema, transliteriereDhivehi } from './dhivehiTransliteration.js';
 import { CHINESISCH_PINYIN_MAP } from './chinesePinyin.js';
+import { UIGURISCH_MAP, hatUigurischesSchema } from './uigurischTransliteration.js';
 import { transliteriereChinesischMitWortliste } from './chineseWordSegmentation.js';
 import { transliteriereThaiMitWortliste } from './thaiWordSegmentation.js';
 import { transliteriereThailaendischSilbenweise } from './thaiSyllableTransliteration.js';
@@ -158,6 +159,47 @@ const KYRILLISCH_MAP = {
   'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Ju', 'Я': 'Ja',
   'Ђ': 'Dj', 'Ј': 'J', 'Љ': 'Lj', 'Њ': 'Nj', 'Ћ': 'C', 'Џ': 'Dz',
   'Ө': 'O', 'Ү': 'U',
+};
+
+// --- Baschkirisch, Tatarisch, Tschuwaschisch: Kyrillisch-Zusatzbuchstaben ---
+// Alle drei nutzen das russische Alphabet als Basis (siehe KYRILLISCH_MAP
+// oben), erweitert um turk- bzw. wolgafinnisch-spezifische Buchstaben.
+// Quelle: ALA-LC "Non-Slavic Languages in Cyrillic Script"-Tabelle. Deren
+// Diakritika (z. B. Ә->Ă, Һ->Ḣ) werden hier - wie im Projekt ueblich (siehe
+// ө/ү oben, dort schon auf "o"/"u" vereinfacht statt "ö"/"ü") - auf reine
+// ASCII-Naeherungen reduziert statt wissenschaftlich exakt uebernommen.
+//
+// Eigene Tabellen statt gemeinsamer Erweiterung der KYRILLISCH_MAP, weil
+// derselbe Buchstabe 'ҫ' (U+04AB) in beiden Sprachen vorkommt, aber
+// unterschiedlich klingt: Baschkirisch /θ/ (wie engl. "th" in "think") vs.
+// Tschuwaschisch /ɕ/ (weiches "sch") - eine gemeinsame Tabelle koennte nur
+// einen der beiden Werte abbilden.
+const BASCHKIRISCH_MAP = {
+  ...KYRILLISCH_MAP,
+  'ә': 'a', 'Ә': 'A',
+  'ғ': 'gh', 'Ғ': 'Gh',
+  'ҙ': 'dh', 'Ҙ': 'Dh',
+  'ҡ': 'q', 'Ҡ': 'Q',
+  'ң': 'ng', 'Ң': 'Ng',
+  'ҫ': 'th', 'Ҫ': 'Th',
+  'һ': 'h', 'Һ': 'H',
+};
+
+const TATARISCH_MAP = {
+  ...KYRILLISCH_MAP,
+  'ә': 'a', 'Ә': 'A',
+  'җ': 'j', 'Җ': 'J',
+  'ң': 'ng', 'Ң': 'Ng',
+  'һ': 'h', 'Һ': 'H',
+};
+
+const TSCHUWASCHISCH_MAP = {
+  ...KYRILLISCH_MAP,
+  'ӑ': 'a', 'Ӑ': 'A',
+  'ӗ': 'e', 'Ӗ': 'E',
+  'ҫ': 'sh', 'Ҫ': 'Sh',
+  'ӳ': 'u', 'Ӳ': 'U',
+  'ӱ': 'u', 'Ӱ': 'U',
 };
 
 // --- Amharisch / Tigrinya (Ge'ez-Schrift) ---
@@ -316,6 +358,22 @@ const ARABISCH_KONSONANTEN = {
   // Persisch/Urdu verwenden eigene Glyphvarianten statt der arabischen
   // ك/ي: ک (Farsi Keheh, U+06A9) statt ك, siehe ARABISCH_HALBVOKALE für ی.
   'ک': 'k',
+  // Sindhi-Erweiterungen (implosive/aspirierte Zusatzbuchstaben, siehe
+  // ALA-LC "Sindhi in Arabic script"-Tabelle). Anders als bei den oben
+  // schon vorhandenen Persisch/Urdu/Paschtu-Erweiterungen gibt es fuer
+  // Sindhi (Stand jetzt) KEIN Aussprache-Woerterbuch in diesem Projekt -
+  // die Kurzvokale werden daher ausschliesslich ueber die allgemeine
+  // Standardvokal-Heuristik geraten (siehe transliteriereArabisch()
+  // unten), nicht ueber echte IPA-Ausspracheangaben wie bei Urdu/Paschtu/
+  // Farsi/Sorani. Deshalb ist Sindhi in languages.js auf 'gelb' statt
+  // 'gruen' eingestuft. Mehrere historisch/phonetisch unterschiedene
+  // Implosiv-/Aspirations-Varianten werden bewusst auf dieselbe oder eine
+  // sehr aehnliche lateinische Lesung abgebildet (gleiche Art
+  // Vereinfachung wie bei den Ge'ez-Konsonanten in AMHARISCH_MAP oben).
+  'ٻ': 'b', 'ڀ': 'bh', 'ٺ': 'th', 'ٿ': 'th', 'ڦ': 'ph',
+  'ڄ': 'j', 'ڃ': 'ny', 'ڇ': 'chh',
+  'ډ': 'd', 'ڊ': 'd', 'ڌ': 'dh', 'ڏ': 'd', 'ڍ': 'dh',
+  'ڳ': 'g', 'ڱ': 'ng', 'ڪ': 'k', 'ڻ': 'n',
 };
 
 // و und ي (bzw. deren persisch/urdu-Variante ی, Farsi Yeh U+06CC):
@@ -359,7 +417,7 @@ const ARABISCH_ZIFFERN = {
   '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
 };
 
-const ARABISCH_SPRACHCODES = new Set(['ar-SA', 'fa-IR', 'ur-PK', 'ps-PK', 'ckb-IQ']);
+const ARABISCH_SPRACHCODES = new Set(['ar-SA', 'fa-IR', 'ur-PK', 'ps-PK', 'ckb-IQ', 'sd-PK']);
 
 /** Ob für einen Sprachcode die arabische Schrift-Umschrift zuständig ist. */
 export function hatArabischesSchema(code) {
@@ -1466,6 +1524,9 @@ const MAPS_NACH_SPRACHE = {
   'ky-KG': KYRILLISCH_MAP,
   'tg-TJ': KYRILLISCH_MAP,
   'kk-KZ': KYRILLISCH_MAP,
+  'ba-RU': BASCHKIRISCH_MAP,
+  'tt-RU': TATARISCH_MAP,
+  'cv-RU': TSCHUWASCHISCH_MAP,
   // Arabisch (ar-SA/fa-IR/ur-PK/ps-PK/ckb-IQ) läuft NICHT über diese
   // flache Tabelle, sondern über transliteriereArabisch() weiter oben,
   // da dort eine Kurzvokal-Ergänzungslogik nötig ist (siehe Kommentar
@@ -1632,6 +1693,10 @@ export async function romanize(text, zielsprache) {
 
   if (zielsprache === 'zh-CN' || zielsprache === 'zh-TW') {
     return transliteriereChinesischMitWortliste(text, zielsprache, (t) => ersetzeMitLaengstemTreffer(t, CHINESISCH_PINYIN_MAP));
+  }
+
+  if (hatUigurischesSchema(zielsprache)) {
+    return ersetzeMitLaengstemTreffer(text, UIGURISCH_MAP);
   }
 
   if (zielsprache === 'th-TH') {

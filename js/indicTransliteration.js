@@ -2,7 +2,7 @@
  * indicTransliteration.js
  * Vereinfachte, an ISO 15919 angelehnte Umschrift für den indischen
  * Schriftenkreis (Devanagari, Bengali, Gujarati, Gurmukhi, Kannada, Tamil,
- * Telugu, Sinhala).
+ * Telugu, Sinhala, Odia, Malayalam).
  *
  * Diese Schriften sind Abugidas: ein Konsonantenzeichen trägt einen
  * inhärenten Vokal (meist "a"), sofern ihm nicht ein Vokalzeichen (Matra)
@@ -17,8 +17,8 @@
  * wissenschaftlich exakte Transliteration.
  */
 
-function baueSchema({ konsonanten, matras, unabhaengigeVokale, virama, sonstige = {} }) {
-  return { konsonanten, matras, unabhaengigeVokale, virama, sonstige };
+function baueSchema({ konsonanten, matras, unabhaengigeVokale, virama, sonstige = {}, nukta = null }) {
+  return { konsonanten, matras, unabhaengigeVokale, virama, sonstige, nukta };
 }
 
 // --- Devanagari (Hindi, Nepali) ---
@@ -60,6 +60,10 @@ const BENGALI = baueSchema({
     'য': 'y', 'র': 'r', 'ল': 'l',
     'শ': 'sh', 'ষ': 'sh', 'স': 's', 'হ': 'h',
     'ড়': 'r', 'ঢ়': 'rh', 'য়': 'y', 'ৎ': 't',
+    // Nur im Assamesischen genutzt (ISO 15919 zaehlt sie ausdruecklich zur
+    // Bengali-Tabelle): 'ৰ' ersetzt dort 'র' fuer den r-Laut, 'ৱ' steht
+    // fuer den w-Laut, den das Bengali-Alphabet selbst nicht kennt.
+    'ৰ': 'r', 'ৱ': 'w',
   },
   matras: {
     '\u09BE': 'aa', '\u09BF': 'i', '\u09C0': 'ii', '\u09C1': 'u', '\u09C2': 'uu',
@@ -74,6 +78,15 @@ const BENGALI = baueSchema({
     '\u0982': 'ng', '\u0983': 'h', '\u0981': 'n',
     '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
     '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  },
+  // Manche Quellen (u. a. Ausgaben fuer Assamesisch) schreiben Nukta-
+  // Konsonanten wie 'য়' zerlegt als Basisbuchstabe + separates Nukta-
+  // Kombinationszeichen (U+09BC) statt als vorkomponiertes Einzelzeichen.
+  // Ohne diese Zuordnung wuerde das Nukta unerkannt durchgereicht und der
+  // Vokal danach falsch zugeordnet (siehe transliteriereIndischeSchrift()).
+  nukta: {
+    zeichen: '\u09BC',
+    varianten: { 'ড': 'r', 'ঢ': 'rh', 'য': 'y' },
   },
 });
 
@@ -238,16 +251,89 @@ const SINHALA = baueSchema({
   },
 });
 
+// --- Odia (Oriya) ---
+// Zeichenzuordnung nach ISO 15919 / ALA-LC-Umschrifttabelle fuer Oriya;
+// Aufbau strukturell identisch zu Devanagari/Telugu (gleiche Abugida-Logik).
+const ODIA = baueSchema({
+  konsonanten: {
+    'କ': 'k', 'ଖ': 'kh', 'ଗ': 'g', 'ଘ': 'gh', 'ଙ': 'ng',
+    'ଚ': 'ch', 'ଛ': 'chh', 'ଜ': 'j', 'ଝ': 'jh', 'ଞ': 'ny',
+    'ଟ': 't', 'ଠ': 'th', 'ଡ': 'd', 'ଢ': 'dh', 'ଣ': 'n',
+    'ତ': 't', 'ଥ': 'th', 'ଦ': 'd', 'ଧ': 'dh', 'ନ': 'n',
+    'ପ': 'p', 'ଫ': 'ph', 'ବ': 'b', 'ଭ': 'bh', 'ମ': 'm',
+    'ଯ': 'y', 'ର': 'r', 'ଲ': 'l', 'ଳ': 'l', 'ଵ': 'v',
+    'ଶ': 'sh', 'ଷ': 'sh', 'ସ': 's', 'ହ': 'h',
+  },
+  matras: {
+    '\u0B3E': 'aa', '\u0B3F': 'i', '\u0B40': 'ii', '\u0B41': 'u', '\u0B42': 'uu',
+    '\u0B43': 'ri', '\u0B47': 'e', '\u0B48': 'ai', '\u0B4B': 'o', '\u0B4C': 'au',
+  },
+  unabhaengigeVokale: {
+    'ଅ': 'a', 'ଆ': 'aa', 'ଇ': 'i', 'ଈ': 'ii', 'ଉ': 'u', 'ଊ': 'uu',
+    'ଋ': 'ri', 'ୠ': 'rii', 'ଏ': 'e', 'ଐ': 'ai', 'ଓ': 'o', 'ଔ': 'au',
+  },
+  virama: '\u0B4D',
+  sonstige: {
+    '\u0B02': 'n', '\u0B03': 'h', '\u0B01': 'n',
+    '୦': '0', '୧': '1', '୨': '2', '୩': '3', '୪': '4',
+    '୫': '5', '୬': '6', '୭': '7', '୮': '8', '୯': '9',
+  },
+});
+
+// --- Malayalam ---
+// Zeichenzuordnung nach ISO 15919 / ALA-LC-Umschrifttabelle fuer Malayalam.
+// Besonderheit gegenueber den anderen Schriften hier: die "Chillu"-Buchstaben
+// (ൻ ൺ ർ ൽ ൾ ൿ) sind eigenstaendige Zeichen fuer einen reinen Konsonanten
+// OHNE inhaerenten Vokal (kein Konsonant+Virama, sondern ein einzelner
+// Codepoint) - sie werden daher wie Anusvara/Visarga ueber "sonstige" direkt
+// 1:1 ersetzt statt ueber die Konsonantenliste (die automatisch ein "a"
+// anhaengen wuerde).
+const MALAYALAM = baueSchema({
+  konsonanten: {
+    'ക': 'k', 'ഖ': 'kh', 'ഗ': 'g', 'ഘ': 'gh', 'ങ': 'ng',
+    'ച': 'ch', 'ഛ': 'chh', 'ജ': 'j', 'ഝ': 'jh', 'ഞ': 'ny',
+    'ട': 't', 'ഠ': 'th', 'ഡ': 'd', 'ഢ': 'dh', 'ണ': 'n',
+    'ത': 't', 'ഥ': 'th', 'ദ': 'd', 'ധ': 'dh', 'ന': 'n',
+    'പ': 'p', 'ഫ': 'ph', 'ബ': 'b', 'ഭ': 'bh', 'മ': 'm',
+    'യ': 'y', 'ര': 'r', 'റ': 'r', 'ല': 'l', 'ള': 'l', 'ഴ': 'zh', 'വ': 'v',
+    'ശ': 'sh', 'ഷ': 'sh', 'സ': 's', 'ഹ': 'h',
+  },
+  matras: {
+    '\u0D3E': 'aa', '\u0D3F': 'i', '\u0D40': 'ii', '\u0D41': 'u', '\u0D42': 'uu',
+    '\u0D43': 'ri', '\u0D46': 'e', '\u0D47': 'ee', '\u0D48': 'ai', '\u0D4A': 'o',
+    '\u0D4B': 'oo', '\u0D4C': 'au',
+  },
+  unabhaengigeVokale: {
+    'അ': 'a', 'ആ': 'aa', 'ഇ': 'i', 'ഈ': 'ii', 'ഉ': 'u', 'ഊ': 'uu',
+    'ഋ': 'ri', 'ൠ': 'rii', 'എ': 'e', 'ഏ': 'ee', 'ഐ': 'ai',
+    'ഒ': 'o', 'ഓ': 'oo', 'ഔ': 'au',
+  },
+  virama: '\u0D4D',
+  sonstige: {
+    '\u0D02': 'n', '\u0D03': 'h',
+    // Chillu-Buchstaben (reiner Konsonant, kein inhaerenter Vokal):
+    'ൻ': 'n', 'ൺ': 'n', 'ർ': 'r', 'ൽ': 'l', 'ൾ': 'l', 'ൿ': 'k',
+    '൦': '0', '൧': '1', '൨': '2', '൩': '3', '൪': '4',
+    '൫': '5', '൬': '6', '൭': '7', '൮': '8', '൯': '9',
+  },
+});
+
 const SCHEMA_NACH_SPRACHCODE = {
   'hi-IN': DEVANAGARI,
   'ne-NP': DEVANAGARI,
+  'ks-IN': DEVANAGARI,
+  'mr-IN': DEVANAGARI,
+  'sa-IN': DEVANAGARI,
   'bn-IN': BENGALI,
+  'as-IN': BENGALI,
   'gu-IN': GUJARATI,
   'pa-IN': GURMUKHI,
   'kn-IN': KANNADA,
   'ta-LK': TAMIL,
   'te-IN': TELUGU,
   'si-LK': SINHALA,
+  'or-IN': ODIA,
+  'ml-IN': MALAYALAM,
 };
 
 /** Ob für einen Sprachcode ein indisches Umschrift-Schema hinterlegt ist. */
@@ -266,7 +352,7 @@ export function transliteriereIndischeSchrift(text, code) {
   const schema = SCHEMA_NACH_SPRACHCODE[code];
   if (!schema) return text;
 
-  const { konsonanten, matras, unabhaengigeVokale, virama, sonstige } = schema;
+  const { konsonanten, matras, unabhaengigeVokale, virama, sonstige, nukta } = schema;
   const zeichen = Array.from(text);
   let ergebnis = '';
   let i = 0;
@@ -275,19 +361,34 @@ export function transliteriereIndischeSchrift(text, code) {
     const aktuelles = zeichen[i];
 
     if (Object.prototype.hasOwnProperty.call(konsonanten, aktuelles)) {
-      const naechstes = zeichen[i + 1];
+      // Zerlegtes Nukta (Basisbuchstabe + U+..BC statt vorkomponiertem
+      // Zeichen) veraendert den Konsonantenlaut und verschiebt den
+      // Lesekopf um ein zusaetzliches Zeichen - siehe Kommentar bei
+      // BENGALI.nukta oben.
+      let konsonantWert = konsonanten[aktuelles];
+      let versatz = 1;
+      if (
+        nukta &&
+        zeichen[i + 1] === nukta.zeichen &&
+        Object.prototype.hasOwnProperty.call(nukta.varianten, aktuelles)
+      ) {
+        konsonantWert = nukta.varianten[aktuelles];
+        versatz = 2;
+      }
+
+      const naechstes = zeichen[i + versatz];
       if (naechstes === virama) {
-        ergebnis += konsonanten[aktuelles];
-        i += 2;
+        ergebnis += konsonantWert;
+        i += versatz + 1;
         continue;
       }
       if (naechstes && Object.prototype.hasOwnProperty.call(matras, naechstes)) {
-        ergebnis += konsonanten[aktuelles] + matras[naechstes];
-        i += 2;
+        ergebnis += konsonantWert + matras[naechstes];
+        i += versatz + 1;
         continue;
       }
-      ergebnis += konsonanten[aktuelles] + 'a';
-      i += 1;
+      ergebnis += konsonantWert + 'a';
+      i += versatz;
       continue;
     }
 
