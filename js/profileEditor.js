@@ -19,6 +19,7 @@ import {
 	ladeProfile,
 } from './profileRepository.js';
 import {SPRACHEN, findeSpracheNachCode, schriftLabel, romanisierungFuerCode} from './languages.js';
+import {beispielsatzFuerCode} from './beispielsaetze.js';
 import {
 	problematischeRegelnErmitteln,
 	schluesselParsen,
@@ -118,6 +119,9 @@ export async function zeigeProfilImEditor(profilId) {
 
 	spracheImEditorAnzeigen(profil);
 
+	el('editor-silbenvertauschung-checkbox').checked = Boolean(profil.silbenvertauschung);
+	el('editor-wortspiegelung-checkbox').checked = Boolean(profil.wortspiegelung);
+
 	listeNeuAufbauen(
 		'editor-vokal-liste',
 		austauschZeileErzeugen,
@@ -141,38 +145,14 @@ export async function zeigeProfilImEditor(profilId) {
 
 function spracheImEditorAnzeigen(profil) {
 	const select = el('editor-sprache-select');
-	const customToggle = el('editor-sprache-custom-toggle');
-	const customFelder = el('editor-sprache-custom-felder');
-	const bekannt = findeSpracheNachCode(profil.zielsprache);
-
-	if (bekannt) {
-		customToggle.checked = false;
-		customFelder.hidden = true;
-		select.disabled = false;
-		select.value = profil.zielsprache;
-	} else {
-		customToggle.checked = true;
-		customFelder.hidden = false;
-		select.disabled = true;
-		el('editor-sprache-custom-code').value = profil.zielsprache;
-		el('editor-sprache-custom-name').value = profil.zielsprache_name || '';
-		el('editor-sprache-custom-romanisierung').checked = !!profil.romanisierung_noetig;
-	}
+	select.value = profil.zielsprache;
 
 	schriftHinweisAktualisieren();
+	beispielsatzAktualisieren();
 }
 
 function schriftHinweisAktualisieren() {
 	const hinweis = el('editor-schrift-hinweis');
-	const customToggle = el('editor-sprache-custom-toggle');
-
-	if (customToggle.checked) {
-		hinweis.innerHTML =
-			'Bei einem eigenen Sprachcode gibst du unten selbst an, ob eine Umschrift angewendet werden soll.';
-		hinweis.className = 'form-hint';
-		return;
-	}
-
 	const select = el('editor-sprache-select');
 	const sprache = findeSpracheNachCode(select.value);
 
@@ -188,6 +168,28 @@ function schriftHinweisAktualisieren() {
 	};
 
 	hinweis.className = `form-hint ${KLASSE_NACH_QUALITAET[sprache.qualitaet] || ''}`.trim();
+}
+
+/**
+ * Zeigt unterhalb der Sprachauswahl einen kurzen Beispielsatz in der
+ * aktuell gewählten realen Zwischensprache an (siehe beispielsaetze.js) -
+ * nur zur Orientierung, welches Lautbild/welche Buchstabenfolgen die
+ * gewählte Sprache typischerweise hat, bevor man Vokal-/Konsonantenregeln
+ * definiert.
+ */
+function beispielsatzAktualisieren() {
+	const anzeige = el('editor-sprache-beispielsatz');
+	const select = el('editor-sprache-select');
+	const satz = beispielsatzFuerCode(select.value);
+
+	if (!satz) {
+		anzeige.hidden = true;
+		anzeige.innerHTML = '';
+		return;
+	}
+
+	anzeige.innerHTML = `Beispielsatz in dieser Sprache: <em>${satz}</em>`;
+	anzeige.hidden = false;
 }
 
 function listeNeuAufbauen(containerId, zeilenErzeuger, eintraege) {
@@ -220,6 +222,7 @@ const POSITION_OPTIONEN = [
 	['anfang', 'Wortanfang'],
 	['mitte', 'Wortmitte'],
 	['ende', 'Wortende'],
+	['gesamt', 'Gesamtwort'],
 ];
 
 function austauschZeileErzeugen(container, von = '', zu = '', position = null) {
@@ -230,7 +233,7 @@ function austauschZeileErzeugen(container, von = '', zu = '', position = null) {
 	vonInput.className = 'form-input editor-von';
 	vonInput.type = 'text';
 	vonInput.maxLength = 6;
-	vonInput.placeholder = 'von (z. B. a)';
+	vonInput.placeholder = 'von (z. B. a, sch)';
 	vonInput.value = von;
 
 	const pfeil = document.createElement('span');
@@ -240,7 +243,7 @@ function austauschZeileErzeugen(container, von = '', zu = '', position = null) {
 	const zuInput = document.createElement('input');
 	zuInput.className = 'form-input editor-zu';
 	zuInput.type = 'text';
-	zuInput.placeholder = 'zu (z. B. aa)';
+	zuInput.placeholder = 'zu (z. B. aa, leer = entfernen)';
 	zuInput.value = zu;
 
 	const positionSelect = document.createElement('select');
@@ -270,14 +273,32 @@ function sammleAustauschTabelle(containerId) {
 	const tabelle = {};
 
 	for (const zeile of el(containerId).querySelectorAll('.editor-zeile')) {
-		const von = zeile.querySelector('.editor-von').value.trim().toLowerCase();
+		// Bewusst KEIN .trim() auf "von": ein Leerzeichen am Rand ist ein
+		// gültiger, bedeutungstragender Teil des Musters (siehe
+		// wortKernMitGrenzenTransformieren() in phonemeTransformer.js) - z. B.
+		// " i " -> " a ", um NUR das eigenständige Wort "i" zu treffen, nicht
+		// aber ein "i" innerhalb eines längeren Wortes. Dieser Leerzeichen-
+		// Behelf bleibt aus Kompatibilitätsgründen nutzbar, für neue Regeln
+		// ist dafür aber die Positions-Option "Gesamtwort" gedacht (siehe
+		// POSITION_OPTIONEN) - sie braucht kein Leerzeichen im Muster. Nur ein
+		// wirklich komplett leeres Feld macht die Zeile bedeutungslos.
+		const von = zeile.querySelector('.editor-von').value.toLowerCase();
 		const zu = zeile.querySelector('.editor-zu').value;
 		const position = zeile.querySelector('.editor-position').value || null;
 
-		if (von.length > 0 && zu.length > 0) {
+		// "zu" darf bewusst leer sein - das bedeutet "durch nichts ersetzen",
+		// also das gefundene Zeichen/Muster ersatzlos entfernen (siehe
+		// zeichenAustauschKernAnwenden in phonemeTransformer.js, das einen
+		// leeren Ersatzstring bereits korrekt als Löschung verarbeitet).
+		// Nur eine leere "von"-Spalte macht eine Zeile bedeutungslos und wird
+		// daher weiterhin übersprungen.
+		if (von.length > 0) {
+			// Nur für die Wildcard-Erkennung robust gegen ein versehentlich
+			// mitgetipptes Leerzeichen sein (z. B. "* "); als eigentliches
+			// Muster bleibt "von" aber unverändert (siehe Kommentar oben).
 			const schluessel =
-				von === '*'
-					? von
+				von.trim() === '*'
+					? von.trim()
 					: schluesselKodieren(
 							von,
 							GUELTIGE_POSITIONEN.includes(position) ? position : null,
@@ -293,51 +314,19 @@ function sammleAustauschTabelle(containerId) {
 async function speichern() {
 	if (!aktuelleProfilId) return;
 
-	const customToggle = el('editor-sprache-custom-toggle');
+	const select = el('editor-sprache-select');
+	const sprache = findeSpracheNachCode(select.value);
 
-	let zielsprache;
-	let zielsprache_name;
-	let romanisierung_noetig;
-
-	if (customToggle.checked) {
-		zielsprache = el('editor-sprache-custom-code').value.trim();
-		zielsprache_name = el('editor-sprache-custom-name').value.trim();
-		romanisierung_noetig = el('editor-sprache-custom-romanisierung').checked;
-
-		// MyMemory-Codes bestehen aus einem Sprachteil (2-3 Buchstaben) und
-		// optional einem Regions-/Varianten-Suffix (2-3 Buchstaben), z. B.
-		// "sv-SE", "zh-CN" oder "grc-GR".
-		const codeMatch = zielsprache.match(/^([a-zA-Z]{2,3})(-[a-zA-Z]{2,3})?$/);
-
-		if (!codeMatch) {
-			statusAnzeigen('fehler', (content) => {
-				content.innerHTML =
-					'Bitte einen gültigen MyMemory-Sprachcode eingeben (z. B. "fi-FI" oder "grc-GR").';
-			});
-
-			return;
-		}
-
-		// Konvention der Liste: Sprachteil klein, Regionsteil groß (z. B. "sv-SE").
-		zielsprache = codeMatch[2]
-			? `${codeMatch[1].toLowerCase()}-${codeMatch[2].slice(1).toUpperCase()}`
-			: codeMatch[1].toLowerCase();
-
-		if (zielsprache_name.length === 0) {
-			zielsprache_name = zielsprache.toUpperCase();
-		}
-	} else {
-		const select = el('editor-sprache-select');
-		const sprache = findeSpracheNachCode(select.value);
-
-		zielsprache = select.value;
-		zielsprache_name = sprache?.name || select.value;
-		romanisierung_noetig = romanisierungFuerCode(select.value);
-	}
+	const zielsprache = select.value;
+	const zielsprache_name = sprache?.name || select.value;
+	const romanisierung_noetig = romanisierungFuerCode(select.value);
 
 	const vokal_austausch = sammleAustauschTabelle('editor-vokal-liste');
 
 	const konsonant_austausch = sammleAustauschTabelle('editor-konsonant-liste');
+
+	const wortspiegelung = el('editor-wortspiegelung-checkbox').checked;
+	const silbenvertauschung = el('editor-silbenvertauschung-checkbox').checked;
 
 	try {
 		speichereProfil(aktuelleProfilId, {
@@ -346,6 +335,8 @@ async function speichern() {
 			romanisierung_noetig,
 			vokal_austausch,
 			konsonant_austausch,
+			wortspiegelung,
+			silbenvertauschung,
 		});
 
 		const warnungen = problematischeRegelnErmitteln({
@@ -553,6 +544,8 @@ async function neuesProfilErstellen() {
 		romanisierung_noetig: romanisierungFuerCode(ersteSprache.code),
 		vokal_austausch: {},
 		konsonant_austausch: {},
+		wortspiegelung: false,
+		silbenvertauschung: false,
 	};
 
 	try {
@@ -578,15 +571,9 @@ function bindEvents() {
 		austauschZeileErzeugen(el('editor-konsonant-liste'));
 	});
 
-	el('editor-sprache-select').addEventListener('change', schriftHinweisAktualisieren);
-
-	el('editor-sprache-custom-toggle').addEventListener('change', (ereignis) => {
-		const custom = ereignis.target.checked;
-
-		el('editor-sprache-custom-felder').hidden = !custom;
-		el('editor-sprache-select').disabled = custom;
-
+	el('editor-sprache-select').addEventListener('change', () => {
 		schriftHinweisAktualisieren();
+		beispielsatzAktualisieren();
 	});
 
 	el('editor-speichern-button').addEventListener('click', speichern);

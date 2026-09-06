@@ -419,7 +419,7 @@ textarea.form-input {
 	padding: var(--space-3);
 }
 
-.diff-ansicht {
+.diff-ansicht.form-input {
 	width: 100%;
 	min-height: 220px;
 	height: auto;
@@ -1022,7 +1022,8 @@ footer.app-footer p {
 	gap: var(--space-3);
 }
 
-.zwischenergebnis-aktionen {
+.zwischenergebnis-aktionen,
+.eingabe-aktionen {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;

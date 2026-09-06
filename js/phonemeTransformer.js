@@ -5,6 +5,8 @@
  * Text an.
  */
 
+import { wortInSilbenZerlegen } from './silbentrennung.js';
+
 const WILDCARD_SCHLUESSEL = '*';
 const VOKALE = new Set('aeiouyAEIOUY'.split(''));
 
@@ -20,6 +22,15 @@ const VOKALE = new Set('aeiouyAEIOUY'.split(''));
  *   "en:mitte": "tus"     -> greift NUR, wenn "en" weder am Anfang noch am
  *                            Ende steht (also mindestens ein Zeichen davor
  *                            UND danach im Wort vorhanden ist)
+ *   "i:gesamt": "a"       -> greift NUR, wenn "i" das GESAMTE Wort ist (das
+ *                            Muster deckt also Wortanfang UND Wortende
+ *                            gleichzeitig ab). Ersetzt den bisherigen
+ *                            Behelf, ein Leerzeichen mit ins Muster
+ *                            aufzunehmen (" i " -> " a "), um nur ein
+ *                            alleinstehendes Wort wie "i" zu treffen, nicht
+ *                            aber das "i" in "inter" - dieser Leerzeichen-
+ *                            Behelf bleibt aus Kompatibilitätsgründen
+ *                            weiterhin nutzbar, ist aber nicht mehr nötig.
  *
  * "Wort" bezieht sich dabei auf den reinen Wortkern OHNE umgebende
  * Satzzeichen (siehe apply()/applyMitAnnotationen(): "Haus." wird als
@@ -27,8 +38,8 @@ const VOKALE = new Set('aeiouyAEIOUY'.split(''));
  * von "Haus", nicht das Ende von "Haus.").
  */
 const POSITION_TRENNER = ':';
-export const GUELTIGE_POSITIONEN = ['anfang', 'mitte', 'ende'];
-const POSITION_LABEL = { anfang: 'Wortanfang', mitte: 'Wortmitte', ende: 'Wortende' };
+export const GUELTIGE_POSITIONEN = ['anfang', 'mitte', 'ende', 'gesamt'];
+const POSITION_LABEL = { anfang: 'Wortanfang', mitte: 'Wortmitte', ende: 'Wortende', gesamt: 'Gesamtwort' };
 
 /**
  * Zerlegt einen rohen Tabellen-Schlüssel in das eigentliche Buchstaben-
@@ -71,16 +82,25 @@ export function schluesselKodieren(muster, position) {
 
 /**
  * Prüft, ob eine Regel mit der angegebenen Positionsbeschränkung an der
- * konkreten Fundstelle (startIndex bis endIndexExklusiv, bezogen auf den
- * gesamten Wortkern der Länge gesamtLaenge) greifen darf.
+ * konkreten Fundstelle (startIndex bis endIndexExklusiv) greifen darf.
+ * wortStart/wortEnde bezeichnen die Grenzen des ECHTEN Wortkerns innerhalb
+ * des übergebenen Zeichen-Arrays - normalerweise 0 bzw. die Array-Länge,
+ * aber bei einer testweise angehängten Rand-Leerzeichen-Markierung (siehe
+ * wortKernMitGrenzenTransformieren()) um die Markierung nach innen versetzt,
+ * damit "Wortanfang"/"Wortende" weiterhin das echte Wort meinen und nicht
+ * die künstlich angefügte Markierung.
  */
-function positionErlaubt(position, startIndex, endIndexExklusiv, gesamtLaenge) {
+function positionErlaubt(position, startIndex, endIndexExklusiv, wortStart, wortEnde) {
   if (position === null) return true;
-  const istAnfang = startIndex === 0;
-  const istEnde = endIndexExklusiv === gesamtLaenge;
+  const istAnfang = startIndex === wortStart;
+  const istEnde = endIndexExklusiv === wortEnde;
   if (position === 'anfang') return istAnfang;
   if (position === 'ende') return istEnde;
   if (position === 'mitte') return !istAnfang && !istEnde;
+  // "gesamt": das Muster darf NUR greifen, wenn es gleichzeitig am
+  // Wortanfang UND am Wortende steht - also exakt den gesamten Wortkern
+  // ausmacht (z. B. "i" bei "i", aber nicht bei "inter").
+  if (position === 'gesamt') return istAnfang && istEnde;
   return true;
 }
 
@@ -111,7 +131,12 @@ function istKonsonantBuchstabe(zeichen) {
  * fürs Diff-Overlay berechneten Markierungen garantiert zum tatsächlich
  * erzeugten Text passen.
  */
-function zeichenAustauschKernAnwenden(zeichenArray, austauschTabelle, istWildcardPassend = istLateinischerBuchstabe) {
+function zeichenAustauschKernAnwenden(
+  zeichenArray,
+  austauschTabelle,
+  istWildcardPassend = istLateinischerBuchstabe,
+  wortBereich = null
+) {
   const schluesselDaten = Object.keys(austauschTabelle || {})
     .filter((k) => k.length > 0 && k !== WILDCARD_SCHLUESSEL)
     .map((roh) => ({ roh, ...schluesselParsen(roh) }))
@@ -123,7 +148,8 @@ function zeichenAustauschKernAnwenden(zeichenArray, austauschTabelle, istWildcar
   }
 
   const textKlein = zeichenArray.map((e) => e.zeichen).join('');
-  const gesamtLaenge = zeichenArray.length;
+  const wortStart = wortBereich ? wortBereich.start : 0;
+  const wortEnde = wortBereich ? wortBereich.ende : zeichenArray.length;
 
   const ergebnis = [];
   let i = 0;
@@ -148,7 +174,7 @@ function zeichenAustauschKernAnwenden(zeichenArray, austauschTabelle, istWildcar
         // NICHT getroffen - es wird mit der nächstkürzeren Regel bzw.
         // der Wildcard weitergemacht, statt das Zeichen fälschlich zu
         // verändern oder zu blockieren.
-        if (!positionErlaubt(position, i, i + laufLaenge, gesamtLaenge)) {
+        if (!positionErlaubt(position, i, i + laufLaenge, wortStart, wortEnde)) {
           continue;
         }
 
@@ -244,6 +270,201 @@ function zeichenAustauschAnwenden(text, austauschTabelle, istWildcardPassend = i
 }
 
 /**
+ * Wendet Vokal- und Konsonantenaustausch nacheinander auf einen einzelnen
+ * Wortkern an - genau wie apply()/applyMitAnnotationen() es bisher direkt
+ * gemacht haben - erlaubt dabei aber zusätzlich, dass eine Regel ein
+ * Leerzeichen als Teil ihres Musters UND/ODER ihres Ersatzes hat (z. B.
+ * " i " -> " a ", um im Walisischen NUR das eigenständige Wort "i" zu
+ * treffen, nicht aber ein "i" innerhalb eines längeren Wortes).
+ *
+ * Da apply()/applyMitAnnotationen() Wörter grundsätzlich schon anhand von
+ * Leerzeichen in einzelne Tokens zerlegen, kann der eigentliche Wortkern
+ * (kern) selbst nie ein Leerzeichen enthalten - ein Leerzeichen kann also
+ * nur GENAU an seinem Anfang oder Ende eine Rolle spielen, dort, wo im
+ * echten Text ein Leerzeichen (oder der Text-Rand) angrenzt. Für die Dauer
+ * dieses einen Wortes wird dafür testweise ein einzelnes, mit `istGrenze`
+ * markiertes Leerzeichen an die jeweilige Seite angehängt:
+ *
+ *   - Bleibt diese Markierung nach beiden Austausch-Durchläufen unverändert
+ *     erhalten (keine Regel hat sie "verbraucht"), wird sie am Ende wieder
+ *     entfernt - das eigentliche, echte Leerzeichen im Text bleibt also
+ *     exakt wie zuvor unangetastet.
+ *   - Wurde sie dagegen von einer Regel mitverarbeitet (weil deren Muster
+ *     ein Leerzeichen an dieser Stelle enthielt), bleibt das Ergebnis
+ *     dieser Regel Teil der Wort-Ausgabe, und die aufrufende Funktion muss
+ *     dafür sorgen, dass GENAU EIN Leerzeichen aus dem echten, angrenzenden
+ *     Text-Token entfernt wird (siehe `vorLeerzeichenVerbraucht`/
+ *     `nachLeerzeichenVerbraucht` im Rückgabewert), damit dort kein
+ *     doppeltes Leerzeichen entsteht.
+ *
+ * Die Wortgrenzen für die Positionsbeschränkung (":anfang"/":ende") werden
+ * dabei bewusst anhand des ECHTEN Wortkerns nachgeführt (nicht anhand der
+ * Markierung) - bestehende positionsbeschränkte Regeln verhalten sich also
+ * unverändert, auch wenn nun testweise ein Rand-Leerzeichen angehängt wird.
+ *
+ * @param {string} kern - der reine Wortkern (ohne Satzzeichen), garantiert
+ *   ohne eingebettete Leerzeichen.
+ * @param {{ vorLeerzeichen: boolean, nachLeerzeichen: boolean }} grenzen -
+ *   ob im echten Text direkt vor bzw. nach diesem Wort ein Leerzeichen
+ *   steht (oder der Text-Rand erreicht ist) und somit ein Rand-Leerzeichen
+ *   testweise angehängt werden darf.
+ * @param {object} vokalTabelle
+ * @param {object} konsonantTabelle
+ * @returns {{
+ *   zeichenArray: Array<{zeichen: string, art: string|null}>,
+ *   vorLeerzeichenVerbraucht: boolean,
+ *   nachLeerzeichenVerbraucht: boolean,
+ * }}
+ */
+function wortKernMitGrenzenTransformieren(kern, grenzen, vokalTabelle, konsonantTabelle) {
+  const { vorLeerzeichen, nachLeerzeichen } = grenzen;
+
+  let zeichenArray = [
+    ...(vorLeerzeichen ? [{ zeichen: ' ', art: null, istGrenze: true }] : []),
+    ...[...kern].map((zeichen) => ({ zeichen, art: null })),
+    ...(nachLeerzeichen ? [{ zeichen: ' ', art: null, istGrenze: true }] : []),
+  ];
+
+  let wortStart = vorLeerzeichen ? 1 : 0;
+  let wortEnde = wortStart + kern.length;
+
+  zeichenArray = zeichenAustauschKernAnwenden(zeichenArray, vokalTabelle, istVokalBuchstabe, {
+    start: wortStart,
+    ende: wortEnde,
+  });
+
+  // Grenzen für den zweiten Durchlauf ggf. neu bestimmen: nur wenn die
+  // Rand-Markierung den ersten Durchlauf unverändert überstanden hat,
+  // verschiebt sie den echten Wortanfang/-ende weiterhin um eins - wurde
+  // sie bereits ersetzt, zählt sie ab jetzt als normaler Wortbestandteil.
+  const vorneNochMarkiert = vorLeerzeichen && zeichenArray[0]?.istGrenze === true;
+  const hintenNochMarkiert =
+    nachLeerzeichen && zeichenArray.length > 0 && zeichenArray[zeichenArray.length - 1]?.istGrenze === true;
+
+  wortStart = vorneNochMarkiert ? 1 : 0;
+  wortEnde = zeichenArray.length - (hintenNochMarkiert ? 1 : 0);
+
+  zeichenArray = zeichenAustauschKernAnwenden(zeichenArray, konsonantTabelle, istKonsonantBuchstabe, {
+    start: wortStart,
+    ende: wortEnde,
+  });
+
+  const vorneUnveraendert = vorLeerzeichen && zeichenArray[0]?.istGrenze === true;
+  const hintenUnveraendert =
+    nachLeerzeichen && zeichenArray.length > 0 && zeichenArray[zeichenArray.length - 1]?.istGrenze === true;
+
+  if (vorneUnveraendert) zeichenArray = zeichenArray.slice(1);
+  if (hintenUnveraendert) zeichenArray = zeichenArray.slice(0, -1);
+
+  return {
+    zeichenArray,
+    vorLeerzeichenVerbraucht: vorLeerzeichen && !vorneUnveraendert,
+    nachLeerzeichenVerbraucht: nachLeerzeichen && !hintenUnveraendert,
+  };
+}
+
+/**
+ * Gemeinsame Groß-/Kleinschreibungs-Korrektur für alle Verfremdungsarten,
+ * die die REIHENFOLGE von Zeichen oder Zeichengruppen innerhalb eines
+ * Wortes verändern (Wortspiegelung, Silbenvertauschung, ...): der
+ * Großbuchstabe, der im Original nur am eigentlichen Wortanfang stand
+ * (deutsche Substantiv-Großschreibung betrifft praktisch immer nur den
+ * allerersten Buchstaben), würde durch das Umsortieren sonst an einer
+ * zufälligen Stelle mitten im Wort landen. Stattdessen wird das gesamte
+ * Ergebnis kleingeschrieben und - falls das Original großgeschrieben war -
+ * nur der NEUE erste Buchstabe wieder großgeschrieben.
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {boolean} warUrspruenglichGross
+ * @param {boolean} artUeberschreiben
+ */
+function grossKleinschreibungAmWortanfangAnpassen(zeichenArray, warUrspruenglichGross, artUeberschreiben) {
+  return zeichenArray.map((eintrag, index) => {
+    const zeichenKlein = eintrag.zeichen.toLowerCase();
+    const zeichenFinal =
+      index === 0 && warUrspruenglichGross && istLateinischerBuchstabe(zeichenKlein)
+        ? zeichenKlein.toUpperCase()
+        : zeichenKlein;
+
+    return {
+      ...eintrag,
+      zeichen: zeichenFinal,
+      art: artUeberschreiben ? 'geaendert' : eintrag.art,
+    };
+  });
+}
+
+/**
+ * Spiegelt einen bereits transformierten Wortkern buchstabenweise (z. B.
+ * wird aus "Garten" -> "Netrag"). Wird als letzter Schritt der Wort-
+ * Transformation angewandt, NACH Vokal- und Konsonantenaustausch sowie
+ * nach einer eventuellen Silbenvertauschung, sodass Ersatzregeln weiterhin
+ * auf das "normale" Wort greifen und die Spiegelung unabhängig davon als
+ * zusätzliche, rein optische/lautliche Verfremdung hinzukommt.
+ *
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {{ artUeberschreiben: boolean }} [optionen] - wenn true, wird die
+ *   `art` aller Zeichen auf 'geaendert' gesetzt, damit ein Diff-Overlay die
+ *   Spiegelung als Änderung sichtbar macht (siehe applyMitAnnotationen()).
+ * @returns {Array<{zeichen: string, art: string|null}>}
+ */
+export function wortspiegelungAnwenden(zeichenArray, { artUeberschreiben = false } = {}) {
+  if (!zeichenArray || zeichenArray.length === 0) return zeichenArray;
+
+  const erstesZeichen = zeichenArray[0].zeichen;
+  const warGrossgeschrieben =
+    istLateinischerBuchstabe(erstesZeichen) && erstesZeichen !== erstesZeichen.toLowerCase();
+
+  const gespiegelt = [...zeichenArray].reverse();
+
+  return grossKleinschreibungAmWortanfangAnpassen(gespiegelt, warGrossgeschrieben, artUeberschreiben);
+}
+
+/**
+ * Vertauscht die Silben-Reihenfolge eines bereits transformierten
+ * Wortkerns (z. B. wird aus "Garten" -> "Tengar"). Nutzt die heuristische
+ * Silbentrennung aus silbentrennung.js auf dem ERGEBNIS von Vokal-/
+ * Konsonantenaustausch (nicht auf dem Ausgangswort), damit die Silbengrenzen
+ * zum tatsächlich sichtbaren Fantasiewort passen.
+ *
+ * Die Silbenreihenfolge wird komplett umgekehrt (letzte Silbe zuerst) -
+ * bei genau zwei Silben ist das ein einfaches Vertauschen, bei mehr als
+ * zwei eine vollständige Umkehrung der Silbenkette. Wörter mit weniger als
+ * zwei erkannten Silben bleiben unverändert, da es dort nichts zu
+ * vertauschen gibt.
+ *
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {{ artUeberschreiben: boolean }} [optionen]
+ * @returns {Array<{zeichen: string, art: string|null}>}
+ */
+export function silbenVertauschungAnwenden(zeichenArray, { artUeberschreiben = false } = {}) {
+  if (!zeichenArray || zeichenArray.length < 2) return zeichenArray;
+
+  const wortText = zeichenArray.map((e) => e.zeichen).join('');
+  const silbenLaengen = wortInSilbenZerlegen(wortText).map((silbe) => silbe.length);
+
+  if (silbenLaengen.length < 2) return zeichenArray;
+
+  // zeichenArray anhand der Silbenlängen in Segmente (Teil-Arrays der
+  // Zeichen-Einträge) zerlegen, ...
+  const segmente = [];
+  let position = 0;
+  for (const laenge of silbenLaengen) {
+    segmente.push(zeichenArray.slice(position, position + laenge));
+    position += laenge;
+  }
+
+  // ... und die Segment-REIHENFOLGE umkehren (die Zeichen INNERHALB jeder
+  // Silbe bleiben dabei unangetastet in ihrer ursprünglichen Reihenfolge).
+  const vertauscht = [...segmente].reverse().flat();
+
+  const erstesZeichen = zeichenArray[0].zeichen;
+  const warGrossgeschrieben =
+    istLateinischerBuchstabe(erstesZeichen) && erstesZeichen !== erstesZeichen.toLowerCase();
+
+  return grossKleinschreibungAmWortanfangAnpassen(vertauscht, warGrossgeschrieben, artUeberschreiben);
+}
+
+/**
  * Ermittelt, welche lateinischen Buchstaben in einer Austauschtabelle NICHT
  * durch eine eigene Regel (oder die Wildcard "*") abgedeckt sind. Gedacht
  * als Hilfsfunktion für den Profil-Editor (Warnhinweis "diese Buchstaben
@@ -334,12 +555,17 @@ export function apply(text, profil) {
   if (!profil) return text;
 
   // Wortgrenzen erhalten (Leerzeichen, Satzzeichen), nur die reinen
-  // Wort-Token werden transformiert.
+  // Wort-Token werden transformiert. `tokens` wird unten bewusst in-place
+  // mutiert: ein Rand-Leerzeichen-Muster (siehe
+  // wortKernMitGrenzenTransformieren()) kann dazu führen, dass einem
+  // Nachbar-Token genau ein Leerzeichen entzogen wird.
   const tokens = text.split(/(\s+)/);
 
-  const transformierteTokens = tokens.map((token) => {
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+
     if (/^\s+$/.test(token) || token.length === 0) {
-      return token;
+      continue;
     }
 
     // Satzzeichen am Rand abtrennen, damit z. B. "Haus." korrekt behandelt wird.
@@ -347,20 +573,43 @@ export function apply(text, profil) {
     const [, praefixZeichen, kern, suffixZeichen] = match || ['', '', token, ''];
 
     if (kern.length === 0) {
-      return token;
+      continue;
     }
 
-    let transformiert = zeichenAustauschAnwenden(kern, profil.vokal_austausch, istVokalBuchstabe);
-    transformiert = zeichenAustauschAnwenden(
-      transformiert,
-      profil.konsonant_austausch,
-      istKonsonantBuchstabe
+    const vorToken = tokens[index - 1];
+    const nachToken = tokens[index + 1];
+    const vorLeerzeichen =
+      praefixZeichen === '' && (index === 0 || (typeof vorToken === 'string' && vorToken.endsWith(' ')));
+    const nachLeerzeichen =
+      suffixZeichen === '' &&
+      (index === tokens.length - 1 || (typeof nachToken === 'string' && nachToken.startsWith(' ')));
+
+    const { zeichenArray, vorLeerzeichenVerbraucht, nachLeerzeichenVerbraucht } = wortKernMitGrenzenTransformieren(
+      kern,
+      { vorLeerzeichen, nachLeerzeichen },
+      profil.vokal_austausch,
+      profil.konsonant_austausch
     );
 
-    return praefixZeichen + transformiert + suffixZeichen;
-  });
+    if (vorLeerzeichenVerbraucht && index > 0) {
+      tokens[index - 1] = tokens[index - 1].slice(0, -1);
+    }
+    if (nachLeerzeichenVerbraucht && index < tokens.length - 1) {
+      tokens[index + 1] = tokens[index + 1].slice(1);
+    }
 
-  return transformierteTokens.join('');
+    let zeichenArrayFinal = zeichenArray;
+    if (profil.silbenvertauschung) {
+      zeichenArrayFinal = silbenVertauschungAnwenden(zeichenArrayFinal);
+    }
+    if (profil.wortspiegelung) {
+      zeichenArrayFinal = wortspiegelungAnwenden(zeichenArrayFinal);
+    }
+
+    tokens[index] = praefixZeichen + zeichenArrayFinal.map((e) => e.zeichen).join('') + suffixZeichen;
+  }
+
+  return tokens.join('');
 }
 
 /**
@@ -411,13 +660,20 @@ export function applyMitAnnotationen(text, profil) {
   if (!profil) return { text, segmente: text ? [{ text, art: null }] : [] };
 
   const tokens = text.split(/(\s+)/);
-  const segmenteGesamt = [];
-  let ergebnisText = '';
 
-  for (const token of tokens) {
+  // 1. Durchlauf: jedes Wort-Token transformieren und dabei ggf. genau ein
+  // Leerzeichen aus einem Nachbar-Token verbrauchen (siehe apply() sowie
+  // wortKernMitGrenzenTransformieren() für die genaue Begründung). Das
+  // Ergebnis pro Wort wird zunächst nur gemerkt (nicht sofort in Text/
+  // Segmente umgewandelt), damit ein späteres Wort im selben Durchlauf noch
+  // ein zuvor unangetastetes Leerzeichen-Token kürzen kann, BEVOR dieses
+  // Token im 2. Durchlauf final zusammengesetzt wird.
+  const wortErgebnisse = new Map();
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+
     if (/^\s+$/.test(token) || token.length === 0) {
-      if (token.length > 0) segmenteGesamt.push({ text: token, art: null });
-      ergebnisText += token;
       continue;
     }
 
@@ -425,21 +681,66 @@ export function applyMitAnnotationen(text, profil) {
     const [, praefixZeichen, kern, suffixZeichen] = match || ['', '', token, ''];
 
     if (kern.length === 0) {
-      segmenteGesamt.push({ text: token, art: null });
-      ergebnisText += token;
       continue;
     }
 
-    if (praefixZeichen) segmenteGesamt.push({ text: praefixZeichen, art: null });
+    const vorToken = tokens[index - 1];
+    const nachToken = tokens[index + 1];
+    const vorLeerzeichen =
+      praefixZeichen === '' && (index === 0 || (typeof vorToken === 'string' && vorToken.endsWith(' ')));
+    const nachLeerzeichen =
+      suffixZeichen === '' &&
+      (index === tokens.length - 1 || (typeof nachToken === 'string' && nachToken.startsWith(' ')));
 
-    let zeichenArray = [...kern].map((zeichen) => ({ zeichen, art: null }));
-    zeichenArray = zeichenAustauschKernAnwenden(zeichenArray, profil.vokal_austausch, istVokalBuchstabe);
-    zeichenArray = zeichenAustauschKernAnwenden(zeichenArray, profil.konsonant_austausch, istKonsonantBuchstabe);
+    const { zeichenArray, vorLeerzeichenVerbraucht, nachLeerzeichenVerbraucht } = wortKernMitGrenzenTransformieren(
+      kern,
+      { vorLeerzeichen, nachLeerzeichen },
+      profil.vokal_austausch,
+      profil.konsonant_austausch
+    );
 
-    segmenteGesamt.push(...nachArtGruppieren(zeichenArray));
-    ergebnisText += praefixZeichen + zeichenArray.map((e) => e.zeichen).join('') + suffixZeichen;
+    if (vorLeerzeichenVerbraucht && index > 0) {
+      tokens[index - 1] = tokens[index - 1].slice(0, -1);
+    }
+    if (nachLeerzeichenVerbraucht && index < tokens.length - 1) {
+      tokens[index + 1] = tokens[index + 1].slice(1);
+    }
 
-    if (suffixZeichen) segmenteGesamt.push({ text: suffixZeichen, art: null });
+    let zeichenArrayFinal = zeichenArray;
+    if (profil.silbenvertauschung) {
+      zeichenArrayFinal = silbenVertauschungAnwenden(zeichenArrayFinal, { artUeberschreiben: true });
+    }
+    if (profil.wortspiegelung) {
+      zeichenArrayFinal = wortspiegelungAnwenden(zeichenArrayFinal, { artUeberschreiben: true });
+    }
+
+    wortErgebnisse.set(index, { praefixZeichen, zeichenArray: zeichenArrayFinal, suffixZeichen });
+  }
+
+  // 2. Durchlauf: jetzt anhand der (ggf. gekürzten) Tokens den finalen Text
+  // sowie die Diff-Segmente zusammensetzen.
+  const segmenteGesamt = [];
+  let ergebnisText = '';
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const wortErgebnis = wortErgebnisse.get(index);
+
+    if (wortErgebnis) {
+      const { praefixZeichen, zeichenArray, suffixZeichen } = wortErgebnis;
+
+      if (praefixZeichen) segmenteGesamt.push({ text: praefixZeichen, art: null });
+      segmenteGesamt.push(...nachArtGruppieren(zeichenArray));
+      ergebnisText += praefixZeichen + zeichenArray.map((e) => e.zeichen).join('') + suffixZeichen;
+      if (suffixZeichen) segmenteGesamt.push({ text: suffixZeichen, art: null });
+      continue;
+    }
+
+    // Reines Leerzeichen- oder Satzzeichen-Token (ggf. durch eine
+    // Randregel im 1. Durchlauf bereits um ein Zeichen gekürzt) unverändert
+    // übernehmen.
+    const token = tokens[index];
+    if (token.length > 0) segmenteGesamt.push({ text: token, art: null });
+    ergebnisText += token;
   }
 
   return { text: ergebnisText, segmente: segmenteGesamt };

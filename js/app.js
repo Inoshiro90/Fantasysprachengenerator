@@ -24,8 +24,10 @@ import {romanize} from './transliterationClient.js';
 import {zuUrlSicheremAscii} from './asciiSanitizer.js';
 import {applyMitAnnotationen} from './phonemeTransformer.js';
 import {initProfilEditor, zeigeProfilImEditor} from './profileEditor.js';
+import {zufaelligerInspirationssatz} from './inspirationssaetze.js';
 
 const eingabeFeld = document.getElementById('eingabe-text');
+const beispielsatzButton = document.getElementById('beispielsatz-button');
 const profilAuswahl = document.getElementById('profil-auswahl');
 const generierenButton = document.getElementById('generieren-button');
 const zwischenergebnisFeld = document.getElementById('zwischenergebnis-text');
@@ -545,6 +547,26 @@ function diffSichtbarkeitAktualisieren() {
 }
 
 /**
+ * Setzt einen zufälligen Inspirationssatz (siehe inspirationssaetze.js) ins
+ * deutsche Eingabefeld ein - praktisch, um den Generator schnell mit einem
+ * längeren, stilistisch abwechslungsreichen Text auszuprobieren. Merkt sich
+ * den zuletzt eingefügten Satz per data-Attribut am Button, damit derselbe
+ * Satz nicht zweimal hintereinander erscheint.
+ */
+function beispielsatzKlick() {
+	const vorheriger = beispielsatzButton.dataset.letzterSatz;
+	const satz = zufaelligerInspirationssatz(vorheriger);
+
+	eingabeFeld.value = satz;
+	beispielsatzButton.dataset.letzterSatz = satz;
+
+	// Löst absichtlich kein 'input'-Event aus - ein programmatisches
+	// .value= feuert das ohnehin nicht (siehe Kommentar bei
+	// zwischenergebnisFeld weiter unten), Auto-Übersetzung erfolgt hier wie
+	// gewohnt erst beim Klick auf "Generieren".
+}
+
+/**
  * Fügt den Inhalt der System-Zwischenablage direkt ins Zwischensprache-Feld
  * ein und aktiviert automatisch den manuellen Modus (MyMemory überspringen).
  * Alternativ funktioniert auch normales Strg+V direkt im - dafür nicht mehr
@@ -742,6 +764,7 @@ function init() {
 		zeigeProfilImEditor(profilAuswahl.value);
 	});
 	generierenButton.addEventListener('click', generieren);
+	beispielsatzButton.addEventListener('click', beispielsatzKlick);
 	diffAnzeigenToggle.addEventListener('change', diffSichtbarkeitAktualisieren);
 	zwischenergebnisEinfuegenButton.addEventListener('click', zwischenergebnisEinfuegenKlick);
 	// Tippt oder fügt die Person direkt (z. B. per Strg+V) Text ins jetzt
