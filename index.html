@@ -54,7 +54,7 @@
       </div>
     </div>
   </nav>
-<br>
+  <br>
   <div class="container">
     <main>
       <div class="text-cards">
@@ -171,36 +171,118 @@
           <p id="editor-sprache-beispielsatz" class="form-hint" hidden></p>
         </div>
 
-        <div class="editor-abschnitt">
-          <span class="form-label">Zusätzliche Verfremdung</span>
-          <label class="form-check">
-            <input type="checkbox" id="editor-silbenvertauschung-checkbox" />
-            <span class="form-check-label">Silbenvertauschung (Silbenreihenfolge im Wort umkehren, z. B. „Garten“ → „Tengar“)</span>
-          </label>
-          <label class="form-check">
-            <input type="checkbox" id="editor-wortspiegelung-checkbox" />
-            <span class="form-check-label">Wortspiegelung (Buchstaben im Wort umkehren, z. B. „Garten“ → „Netrag“)</span>
-          </label>
-        </div>
+        <details class="editor-abschnitt editor-klappbar">
+          <summary class="editor-klapptitel">Zusätzliche Verfremdung</summary>
+          <div class="editor-klappinhalt">
+            <label class="form-check">
+              <input type="checkbox" id="editor-silbenverdopplung-checkbox" />
+              <span class="form-check-label">Silbenverdopplung (erste Silbe wiederholen, z. B. „Garten“ →
+                „Gargarten“)</span>
+            </label>
+            <label class="form-check">
+              <input type="checkbox" id="editor-silbenvertauschung-checkbox" />
+              <span class="form-check-label">Silbenvertauschung (Silbenreihenfolge im Wort umkehren, z. B. „Garten“ →
+                „Tengar“)</span>
+            </label>
+            <label class="form-check">
+              <input type="checkbox" id="editor-wortspiegelung-checkbox" />
+              <span class="form-check-label">Wortspiegelung (Buchstaben im Wort umkehren, z. B. „Garten“ →
+                „Netrag“)</span>
+            </label>
 
-        <div class="editor-abschnitt">
-          <div class="editor-abschnitt-kopf">
-            <span class="form-label">Vokalaustausch</span>
-            <button type="button" class="btn btn-ghost btn-sm" id="editor-vokal-hinzufuegen">+ Regel</button>
-          </div>
-          <p class="form-hint">Optional: Position festlegen, an der eine Regel greifen soll (Standard: überall im Wort).
-            „Gesamtwort“ greift nur, wenn das Muster das komplette Wort ausmacht (z. B. „i“ bei „i“, aber nicht bei „inter“).
-          </p>
-          <div id="editor-vokal-liste" class="editor-liste"></div>
-        </div>
+            <div class="editor-unteroption">
+              <label class="form-check">
+                <input type="checkbox" id="editor-cluster-checkbox" />
+                <span class="form-check-label">Lange Konsonanten-Cluster auflösen (ab 3 Konsonanten in Folge, z. B.
+                  „Fenster“ → „Fenseter“)</span>
+              </label>
+              <div class="editor-unteroption-feld">
+                <label class="form-label" for="editor-cluster-fuellvokal">Füllvokal</label>
+                <select id="editor-cluster-fuellvokal" class="form-input">
+                  <option value="vorheriger">Vorheriger</option>
+                  <option value="naechster">Nächster</option>
+                  <option value="seltenster">Seltenster</option>
+                  <option value="haeufigster">Häufigster</option>
+                  <option value="zufaellig">Zufällig</option>
+                  <option value="a">a</option>
+                  <option value="e" selected>e</option>
+                  <option value="i">i</option>
+                  <option value="o">o</option>
+                  <option value="u">u</option>
+                  <option value="y">y</option>
+                </select>
+              </div>
+            </div>
 
-        <div class="editor-abschnitt">
-          <div class="editor-abschnitt-kopf">
-            <span class="form-label">Konsonantenaustausch</span>
-            <button type="button" class="btn btn-ghost btn-sm" id="editor-konsonant-hinzufuegen">+ Regel</button>
+            <div class="editor-unteroption">
+              <label class="form-check">
+                <input type="checkbox" id="editor-wortlaenge-checkbox" />
+                <span class="form-check-label">Lange Wörter kürzen (Wortmitte entfernen, Anfang und Ende bleiben
+                  erhalten)</span>
+              </label>
+              <div class="editor-unteroption-feld">
+                <label class="form-label" for="editor-wortlaenge-maximal">Max. Zeichen</label>
+                <input type="number" id="editor-wortlaenge-maximal" class="form-input" min="2" step="1" value="8"
+                  style="width: 30%;" />
+              </div>
+            </div>
           </div>
-          <div id="editor-konsonant-liste" class="editor-liste"></div>
-        </div>
+        </details>
+
+        <details class="editor-abschnitt editor-klappbar">
+          <summary class="editor-klapptitel">Vokalaustausch</summary>
+          <div class="editor-klappinhalt">
+
+            <p class="form-hint">Optional: Position festlegen, an der eine Regel greifen soll (Standard: überall im
+              Wort).
+              „Gesamtwort“ greift nur, wenn das Muster das komplette Wort ausmacht (z. B. „i“ bei „i“, aber nicht bei
+              „inter“).
+            </p>
+            <br>
+            <div class="editor-schnellaktion" style="display:none">
+              <select id="editor-vokal-verdopplung-position" class="form-input editor-position"
+                aria-label="Position für Vokal-Verdopplung">
+                <option value="">Überall</option>
+                <option value="anfang">Wortanfang</option>
+                <option value="mitte">Wortmitte</option>
+                <option value="ende" selected>Wortende</option>
+                <option value="gesamt">Gesamtwort</option>
+              </select>
+              <button type="button" class="btn btn-ghost btn-sm" id="editor-vokal-verdopplung-button">Alle Vokale
+                verdoppeln</button>
+            </div>
+            <div id="editor-vokal-liste" class="editor-liste"></div>
+            <button type="button" class="btn btn-secondary btn-sm editor-regel-hinzufuegen"
+              id="editor-vokal-hinzufuegen">+ Regel</button>
+          </div>
+        </details>
+
+        <details class="editor-abschnitt editor-klappbar">
+          <summary class="editor-klapptitel">Konsonantenaustausch</summary>
+          <div class="editor-klappinhalt">
+            <p class="form-hint">Optional: Position festlegen, an der eine Regel greifen soll (Standard: überall im
+              Wort).
+              „Gesamtwort“ greift nur, wenn das Muster das komplette Wort ausmacht (z. B. „i“ bei „i“, aber nicht bei
+              „inter“).
+            </p>
+            <br>
+            <div class="editor-schnellaktion" style="display:none">
+              <select id="editor-konsonant-verdopplung-position" class="form-input editor-position"
+                aria-label="Position für Konsonant-Verdopplung">
+                <option value="">Überall</option>
+                <option value="anfang">Wortanfang</option>
+                <option value="mitte">Wortmitte</option>
+                <option value="ende" selected>Wortende</option>
+                <option value="gesamt">Gesamtwort</option>
+              </select>
+              <button type="button" class="btn btn-ghost btn-sm" id="editor-konsonant-verdopplung-button">Alle
+                Konsonanten verdoppeln</button>
+            </div>
+            <div id="editor-konsonant-liste" class="editor-liste"></div>
+            <button type="button" class="btn btn-secondary btn-sm editor-regel-hinzufuegen"
+              id="editor-konsonant-hinzufuegen">+ Regel</button>
+          </div>
+        </details>
 
         <hr style="border: var(--border-whisper); margin-top: var(--space-2);margin-bottom: var(--space-2)">
         <div class="editor-aktionen">

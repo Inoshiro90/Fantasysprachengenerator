@@ -119,8 +119,15 @@ export async function zeigeProfilImEditor(profilId) {
 
 	spracheImEditorAnzeigen(profil);
 
+	el('editor-silbenverdopplung-checkbox').checked = Boolean(profil.silbenverdopplung);
 	el('editor-silbenvertauschung-checkbox').checked = Boolean(profil.silbenvertauschung);
 	el('editor-wortspiegelung-checkbox').checked = Boolean(profil.wortspiegelung);
+
+	el('editor-cluster-checkbox').checked = Boolean(profil.konsonantencluster_aufloesen);
+	el('editor-cluster-fuellvokal').value = profil.konsonantencluster_fuellvokal || 'e';
+
+	el('editor-wortlaenge-checkbox').checked = Boolean(profil.wortlaenge_kuerzen);
+	el('editor-wortlaenge-maximal').value = profil.wortlaenge_maximal || 8;
 
 	listeNeuAufbauen(
 		'editor-vokal-liste',
@@ -327,6 +334,13 @@ async function speichern() {
 
 	const wortspiegelung = el('editor-wortspiegelung-checkbox').checked;
 	const silbenvertauschung = el('editor-silbenvertauschung-checkbox').checked;
+	const silbenverdopplung = el('editor-silbenverdopplung-checkbox').checked;
+
+	const konsonantencluster_aufloesen = el('editor-cluster-checkbox').checked;
+	const konsonantencluster_fuellvokal = el('editor-cluster-fuellvokal').value || 'e';
+
+	const wortlaenge_kuerzen = el('editor-wortlaenge-checkbox').checked;
+	const wortlaenge_maximal = Math.max(2, Number.parseInt(el('editor-wortlaenge-maximal').value, 10) || 8);
 
 	try {
 		speichereProfil(aktuelleProfilId, {
@@ -337,6 +351,11 @@ async function speichern() {
 			konsonant_austausch,
 			wortspiegelung,
 			silbenvertauschung,
+			silbenverdopplung,
+			konsonantencluster_aufloesen,
+			konsonantencluster_fuellvokal,
+			wortlaenge_kuerzen,
+			wortlaenge_maximal,
 		});
 
 		const warnungen = problematischeRegelnErmitteln({
@@ -546,6 +565,11 @@ async function neuesProfilErstellen() {
 		konsonant_austausch: {},
 		wortspiegelung: false,
 		silbenvertauschung: false,
+		silbenverdopplung: false,
+		konsonantencluster_aufloesen: false,
+		konsonantencluster_fuellvokal: 'e',
+		wortlaenge_kuerzen: false,
+		wortlaenge_maximal: 8,
 	};
 
 	try {
@@ -562,6 +586,26 @@ async function neuesProfilErstellen() {
 	}
 }
 
+/** Buchstaben, die zeichenAustauschKernAnwenden() als Vokal bzw. Konsonant
+ * behandelt (siehe VOKALE in phonemeTransformer.js) - für die
+ * "Alle verdoppeln"-Schnellaktion der jeweiligen Tabelle.
+ */
+const VOKAL_BUCHSTABEN = 'aeiouy'.split('');
+const KONSONANT_BUCHSTABEN = 'bcdfghjklmnpqrstvwxz'.split('');
+
+/**
+ * Fügt für jeden Buchstaben der übergebenen Liste eine neue Austausch-Zeile
+ * "Buchstabe -> Buchstabe+Buchstabe" mit der gewählten Position hinzu -
+ * Schnellaktion, um nicht jede Verdopplungsregel einzeln von Hand anlegen
+ * zu müssen (z. B. "alle Vokale am Wortende verdoppeln").
+ */
+function alleVerdoppelnHinzufuegen(containerId, buchstaben, position) {
+	const container = el(containerId);
+	for (const buchstabe of buchstaben) {
+		austauschZeileErzeugen(container, buchstabe, buchstabe + buchstabe, position || null);
+	}
+}
+
 function bindEvents() {
 	el('editor-vokal-hinzufuegen').addEventListener('click', () => {
 		austauschZeileErzeugen(el('editor-vokal-liste'));
@@ -569,6 +613,16 @@ function bindEvents() {
 
 	el('editor-konsonant-hinzufuegen').addEventListener('click', () => {
 		austauschZeileErzeugen(el('editor-konsonant-liste'));
+	});
+
+	el('editor-vokal-verdopplung-button').addEventListener('click', () => {
+		const position = el('editor-vokal-verdopplung-position').value;
+		alleVerdoppelnHinzufuegen('editor-vokal-liste', VOKAL_BUCHSTABEN, position);
+	});
+
+	el('editor-konsonant-verdopplung-button').addEventListener('click', () => {
+		const position = el('editor-konsonant-verdopplung-position').value;
+		alleVerdoppelnHinzufuegen('editor-konsonant-liste', KONSONANT_BUCHSTABEN, position);
 	});
 
 	el('editor-sprache-select').addEventListener('change', () => {

@@ -465,6 +465,258 @@ export function silbenVertauschungAnwenden(zeichenArray, { artUeberschreiben = f
 }
 
 /**
+ * Verdoppelt die erste Silbe eines bereits transformierten Wortkerns (z. B.
+ * wird aus "Garten" -> "Gargarten") - eine Art "Stottereffekt". Bewusst
+ * IMMER die erste Silbe (nicht zufällig eine beliebige): damit bleibt das
+ * Ergebnis bei jedem Generieren desselben Wortes gleich, statt bei jedem
+ * Durchlauf unterschiedlich auszusehen.
+ *
+ * Nutzt wie silbenVertauschungAnwenden() die heuristische Silbentrennung
+ * aus silbentrennung.js auf dem ERGEBNIS von Vokal-/Konsonantenaustausch.
+ * Auch einsilbige Wörter werden verdoppelt (die "erste Silbe" ist dann das
+ * ganze Wort, z. B. "Haus" -> "Haushaus") - anders als bei der
+ * Silbenvertauschung gibt es hier keinen Sonderfall, der übersprungen wird.
+ *
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {{ artUeberschreiben: boolean }} [optionen]
+ * @returns {Array<{zeichen: string, art: string|null}>}
+ */
+export function silbenVerdopplungAnwenden(zeichenArray, { artUeberschreiben = false } = {}) {
+  if (!zeichenArray || zeichenArray.length === 0) return zeichenArray;
+
+  const wortText = zeichenArray.map((e) => e.zeichen).join('');
+  const silbenLaengen = wortInSilbenZerlegen(wortText).map((silbe) => silbe.length);
+
+  if (silbenLaengen.length === 0) return zeichenArray;
+
+  const ersteSilbenLaenge = silbenLaengen[0];
+  const ersteSilbe = zeichenArray.slice(0, ersteSilbenLaenge);
+  const rest = zeichenArray.slice(ersteSilbenLaenge);
+
+  const verdoppelt = [...ersteSilbe, ...ersteSilbe, ...rest];
+
+  const erstesZeichen = zeichenArray[0].zeichen;
+  const warGrossgeschrieben =
+    istLateinischerBuchstabe(erstesZeichen) && erstesZeichen !== erstesZeichen.toLowerCase();
+
+  return grossKleinschreibungAmWortanfangAnpassen(verdoppelt, warGrossgeschrieben, artUeberschreiben);
+}
+
+/**
+ * Ab dieser Lauflänge (Anzahl direkt aufeinanderfolgender Konsonanten) gilt
+ * ein Konsonanten-Cluster als "aufzulösen" - kürzere Cluster (z. B. "st",
+ * "ch") sind im Deutschen völlig normal und bleiben unangetastet.
+ */
+const CLUSTER_AUFLOESEN_SCHWELLE = 3;
+
+/** Buchstaben, die als Füllvokal beim Auflösen eines Konsonanten-Clusters
+ * infrage kommen - auch bei den dynamischen Strategien ("Häufigster" etc.)
+ * werden nur diese betrachtet. */
+const VOKAL_KANDIDATEN = ['a', 'e', 'i', 'o', 'u', 'y'];
+
+/**
+ * Reihenfolge, in der die dynamischen Füllvokal-Strategien probiert
+ * werden, wenn die eigentlich gewählte Strategie an der jeweiligen
+ * Einfügestelle nicht anwendbar ist (z. B. "Vorheriger", aber es gibt noch
+ * gar keinen Vokal davor im Wort): es wird ab der GEWÄHLTEN Strategie in
+ * dieser Kette weiter nach vorne gearbeitet, bis eine Strategie ein
+ * Ergebnis liefert. "Zufällig" ist immer die letzte Kettenglied und liefert
+ * garantiert ein Ergebnis, dient also als Sicherheitsnetz.
+ */
+const FUELLVOKAL_STRATEGIE_KETTE = ['vorheriger', 'naechster', 'seltenster', 'haeufigster', 'zufaellig'];
+
+function istVokalKandidat(zeichen) {
+  return VOKAL_KANDIDATEN.includes(zeichen.toLowerCase());
+}
+
+/** Sucht rückwärts ab (exklusiv) `abIndex` den nächstgelegenen Vokal. */
+function vokalVorherigerSuchen(zeichenArray, abIndex) {
+  for (let i = abIndex - 1; i >= 0; i -= 1) {
+    const zeichen = zeichenArray[i].zeichen.toLowerCase();
+    if (istVokalKandidat(zeichen)) return zeichen;
+  }
+  return null;
+}
+
+/** Sucht vorwärts ab (inklusiv) `abIndex` den nächstgelegenen Vokal. */
+function vokalNaechsterSuchen(zeichenArray, abIndex) {
+  for (let i = abIndex; i < zeichenArray.length; i += 1) {
+    const zeichen = zeichenArray[i].zeichen.toLowerCase();
+    if (istVokalKandidat(zeichen)) return zeichen;
+  }
+  return null;
+}
+
+/** Zählt, wie oft jeder Kandidaten-Vokal im (unveränderten) Wort vorkommt. */
+function vokalHaeufigkeitErmitteln(zeichenArray) {
+  const zaehler = new Map();
+  for (const eintrag of zeichenArray) {
+    const zeichen = eintrag.zeichen.toLowerCase();
+    if (istVokalKandidat(zeichen)) {
+      zaehler.set(zeichen, (zaehler.get(zeichen) || 0) + 1);
+    }
+  }
+  return zaehler;
+}
+
+/**
+ * Liefert aus einer Häufigkeitstabelle den häufigsten bzw. seltensten
+ * Vokal, jeweils NUR unter den Vokalen, die tatsächlich mindestens einmal
+ * im Wort vorkommen (ein im Wort gar nicht vorhandener Vokal zählt nicht
+ * als "seltenster"). Bei Gleichstand entscheidet die Reihenfolge in
+ * VOKAL_KANDIDATEN. Gibt `null` zurück, wenn das Wort keinen einzigen der
+ * Kandidaten-Vokale enthält.
+ */
+function vokalNachHaeufigkeitAuswaehlen(haeufigkeit, { haeufigsterZuerst }) {
+  let bester = null;
+  let besterWert = haeufigsterZuerst ? -1 : Infinity;
+  for (const kandidat of VOKAL_KANDIDATEN) {
+    const anzahl = haeufigkeit.get(kandidat) || 0;
+    if (anzahl === 0) continue;
+    const istBesser = haeufigsterZuerst ? anzahl > besterWert : anzahl < besterWert;
+    if (istBesser) {
+      bester = kandidat;
+      besterWert = anzahl;
+    }
+  }
+  return bester;
+}
+
+/** Echter Zufall ist hier bewusst gewollt (explizit angefragte Option
+ * "Zufällig") - anders als bei den übrigen Verfremdungen dieses Moduls, die
+ * aus Reproduzierbarkeitsgründen bewusst deterministisch arbeiten. */
+function vokalZufaelligAuswaehlen() {
+  return VOKAL_KANDIDATEN[Math.floor(Math.random() * VOKAL_KANDIDATEN.length)];
+}
+
+/**
+ * Ermittelt den tatsächlich einzusetzenden Füllvokal für EINE Einfügestelle.
+ * `modus` ist entweder ein fester Buchstabe (a/e/i/.../ü, immer sofort
+ * anwendbar) oder eine Strategie aus FUELLVOKAL_STRATEGIE_KETTE. Bei einer
+ * Strategie wird ab deren Position in der Kette so lange die jeweils
+ * NÄCHSTE Strategie versucht, bis eine ein Ergebnis liefert - "Zufällig"
+ * am Ende der Kette liefert garantiert eines.
+ */
+function fuellvokalErmitteln(modus, zeichenArray, einfuegePosition, haeufigkeit) {
+  const kettenStart = FUELLVOKAL_STRATEGIE_KETTE.indexOf(modus);
+
+  // Kein Strategie-Schlüsselwort, sondern ein fest gewählter Buchstabe.
+  if (kettenStart === -1) {
+    return istVokalKandidat(modus) ? modus.toLowerCase() : 'e';
+  }
+
+  for (let i = kettenStart; i < FUELLVOKAL_STRATEGIE_KETTE.length; i += 1) {
+    const strategie = FUELLVOKAL_STRATEGIE_KETTE[i];
+    let ergebnis = null;
+    if (strategie === 'vorheriger') ergebnis = vokalVorherigerSuchen(zeichenArray, einfuegePosition);
+    else if (strategie === 'naechster') ergebnis = vokalNaechsterSuchen(zeichenArray, einfuegePosition);
+    else if (strategie === 'seltenster') ergebnis = vokalNachHaeufigkeitAuswaehlen(haeufigkeit, { haeufigsterZuerst: false });
+    else if (strategie === 'haeufigster') ergebnis = vokalNachHaeufigkeitAuswaehlen(haeufigkeit, { haeufigsterZuerst: true });
+    else if (strategie === 'zufaellig') ergebnis = vokalZufaelligAuswaehlen();
+
+    if (ergebnis) return ergebnis;
+  }
+
+  return vokalZufaelligAuswaehlen();
+}
+
+/**
+ * Lockert lange Konsonanten-Cluster (mindestens CLUSTER_AUFLOESEN_SCHWELLE
+ * aufeinanderfolgende Konsonanten) auf, indem nach jeweils zwei
+ * Konsonanten ein Füllvokal eingeschoben wird - z. B. wird aus "Fenster"
+ * (Cluster "nst") mit Füllvokal "e" -> "Fenseter". Der letzte Konsonant
+ * eines Laufs bekommt bewusst KEINEN Füllvokal mehr hinterhergeschoben, da
+ * direkt danach ohnehin schon ein echter Vokal folgt (das Ende des
+ * Konsonanten-Laufs ist per Definition durch den nächsten Vokal-Lauf
+ * begrenzt).
+ *
+ * Wird VOR den silbenbasierten Verfremdungen (Verdopplung, Vertauschung)
+ * angewandt, damit deren Silbentrennung die neu eingefügten Füllvokale
+ * bereits als reguläre Silbenkerne mitzählt.
+ *
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {string} fuellvokalModus - entweder eine feste Silbe aus
+ *   VOKAL_KANDIDATEN oder eine Strategie aus FUELLVOKAL_STRATEGIE_KETTE
+ * @returns {Array<{zeichen: string, art: string|null}>}
+ */
+function konsonantenClusterAufloesenAnwenden(zeichenArray, fuellvokalModus) {
+  if (!zeichenArray || zeichenArray.length === 0 || !fuellvokalModus) return zeichenArray;
+
+  // Häufigkeit einmalig auf dem UNVERÄNDERTEN Wort ermitteln, damit
+  // "Häufigster"/"Seltenster" bei mehreren Einfügungen im selben Wort
+  // konsistent dieselbe Auswertungsgrundlage benutzen und nicht durch
+  // bereits eingefügte Füllvokale verfälscht werden.
+  const haeufigkeit = vokalHaeufigkeitErmitteln(zeichenArray);
+
+  const ergebnis = [];
+  let i = 0;
+
+  while (i < zeichenArray.length) {
+    if (!istKonsonantBuchstabe(zeichenArray[i].zeichen)) {
+      ergebnis.push(zeichenArray[i]);
+      i += 1;
+      continue;
+    }
+
+    const laufStart = i;
+    while (i < zeichenArray.length && istKonsonantBuchstabe(zeichenArray[i].zeichen)) i += 1;
+    const lauf = zeichenArray.slice(laufStart, i);
+
+    if (lauf.length < CLUSTER_AUFLOESEN_SCHWELLE) {
+      ergebnis.push(...lauf);
+      continue;
+    }
+
+    for (let j = 0; j < lauf.length; j += 1) {
+      ergebnis.push(lauf[j]);
+      const anzahlBisher = j + 1;
+      const istLetzterImLauf = anzahlBisher === lauf.length;
+      if (!istLetzterImLauf && anzahlBisher % 2 === 0) {
+        // Absolute Einfügeposition im ursprünglichen zeichenArray - direkt
+        // NACH dem gerade geschriebenen Konsonanten - wird für "Vorheriger"
+        // und "Nächster" gebraucht, um im ORIGINAL-Array zu suchen.
+        const einfuegePosition = laufStart + anzahlBisher;
+        const fuellvokal = fuellvokalErmitteln(fuellvokalModus, zeichenArray, einfuegePosition, haeufigkeit);
+        ergebnis.push({ zeichen: fuellvokal, art: 'hinzugefuegt' });
+      }
+    }
+  }
+
+  return ergebnis;
+}
+
+/**
+ * Kürzt einen bereits transformierten Wortkern, sobald er eine
+ * Maximallänge überschreitet, indem ein Mittelstück entfernt und Wortanfang
+ * mit Wortende direkt aneinandergehängt werden (z. B. wird bei
+ * maxLaenge=6 aus "Wanderung" -> "Wanung"). Wortanfang und -ende bleiben
+ * dabei jeweils vollständig erhalten, betroffen ist ausschließlich die
+ * Wortmitte - damit bleibt das Wort auch gekürzt noch als Variante des
+ * Originals erkennbar.
+ *
+ * @param {Array<{zeichen: string, art: string|null}>} zeichenArray
+ * @param {number} maxLaenge
+ * @param {{ artUeberschreiben: boolean }} [optionen]
+ * @returns {Array<{zeichen: string, art: string|null}>}
+ */
+export function wortlaengeKuerzenAnwenden(zeichenArray, maxLaenge, { artUeberschreiben = false } = {}) {
+  if (!zeichenArray || !Number.isFinite(maxLaenge) || maxLaenge < 2) return zeichenArray;
+  if (zeichenArray.length <= maxLaenge) return zeichenArray;
+
+  const vordererAnteil = Math.ceil(maxLaenge / 2);
+  const hintererAnteil = maxLaenge - vordererAnteil;
+
+  const gekuerzt = [
+    ...zeichenArray.slice(0, vordererAnteil),
+    ...zeichenArray.slice(zeichenArray.length - hintererAnteil),
+  ];
+
+  if (!artUeberschreiben) return gekuerzt;
+
+  return gekuerzt.map((eintrag) => ({ ...eintrag, art: 'entfernt' }));
+}
+
+/**
  * Ermittelt, welche lateinischen Buchstaben in einer Austauschtabelle NICHT
  * durch eine eigene Regel (oder die Wildcard "*") abgedeckt sind. Gedacht
  * als Hilfsfunktion für den Profil-Editor (Warnhinweis "diese Buchstaben
@@ -599,11 +851,20 @@ export function apply(text, profil) {
     }
 
     let zeichenArrayFinal = zeichenArray;
+    if (profil.konsonantencluster_aufloesen) {
+      zeichenArrayFinal = konsonantenClusterAufloesenAnwenden(zeichenArrayFinal, profil.konsonantencluster_fuellvokal || 'e');
+    }
+    if (profil.silbenverdopplung) {
+      zeichenArrayFinal = silbenVerdopplungAnwenden(zeichenArrayFinal);
+    }
     if (profil.silbenvertauschung) {
       zeichenArrayFinal = silbenVertauschungAnwenden(zeichenArrayFinal);
     }
     if (profil.wortspiegelung) {
       zeichenArrayFinal = wortspiegelungAnwenden(zeichenArrayFinal);
+    }
+    if (profil.wortlaenge_kuerzen) {
+      zeichenArrayFinal = wortlaengeKuerzenAnwenden(zeichenArrayFinal, profil.wortlaenge_maximal);
     }
 
     tokens[index] = praefixZeichen + zeichenArrayFinal.map((e) => e.zeichen).join('') + suffixZeichen;
@@ -707,11 +968,20 @@ export function applyMitAnnotationen(text, profil) {
     }
 
     let zeichenArrayFinal = zeichenArray;
+    if (profil.konsonantencluster_aufloesen) {
+      zeichenArrayFinal = konsonantenClusterAufloesenAnwenden(zeichenArrayFinal, profil.konsonantencluster_fuellvokal || 'e');
+    }
+    if (profil.silbenverdopplung) {
+      zeichenArrayFinal = silbenVerdopplungAnwenden(zeichenArrayFinal, { artUeberschreiben: true });
+    }
     if (profil.silbenvertauschung) {
       zeichenArrayFinal = silbenVertauschungAnwenden(zeichenArrayFinal, { artUeberschreiben: true });
     }
     if (profil.wortspiegelung) {
       zeichenArrayFinal = wortspiegelungAnwenden(zeichenArrayFinal, { artUeberschreiben: true });
+    }
+    if (profil.wortlaenge_kuerzen) {
+      zeichenArrayFinal = wortlaengeKuerzenAnwenden(zeichenArrayFinal, profil.wortlaenge_maximal, { artUeberschreiben: true });
     }
 
     wortErgebnisse.set(index, { praefixZeichen, zeichenArray: zeichenArrayFinal, suffixZeichen });
