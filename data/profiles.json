@@ -121,11 +121,11 @@
 		"romanisierung_noetig": true,
 		"vokal_austausch": {},
 		"konsonant_austausch": {
-			"kh": "kh",
-			"gh": "gh",
-			"sh": "sh",
-			"th": "th",
-			"dh": "dh",
+			"kh": "k",
+			"gh": "g",
+			"sh": "s",
+			"th": "t",
+			"dh": "d",
 			"s": "sz",
 			"r": "rz",
 			"t": "cz"
@@ -134,8 +134,8 @@
 	{
 		"id": "tiefensprache",
 		"name": "Tiefensprache",
-		"zielsprache": "hi-IN",
-		"zielsprache_name": "Hindi",
+		"zielsprache": "ka-GE",
+		"zielsprache_name": "Georgisch",
 		"romanisierung_noetig": true,
 		"vokal_austausch": {},
 		"konsonant_austausch": {
